@@ -2,7 +2,7 @@
    FRANZ ELECTRICIDAD PRO — SUPABASE CONFIG
 ============================================ */
 const SUPABASE_URL = "https://cipzeluejrthpvhsegtp.supabase.co";
-const SUPABASE_KEY = "LX20Q23JkE88vTfj"; // anon key pública
+const SUPABASE_KEY = "sb_publishable_WB-Vly2AnWbLoHWTEdJFsQ_X9DzNgiP"; // anon key pública
 
 // Email del administrador (solo vos)
 const ADMIN_EMAIL = "franzelectricidad@gmail.com"; // <-- cambiá por tu Gmail real
