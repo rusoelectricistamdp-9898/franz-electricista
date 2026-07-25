@@ -1,0 +1,1072 @@
+/* ============================================
+   FRANZ ELECTRICIDAD PRO — APP.JS COMPLETO
+   v2.0 · 2026 · Mar del Plata
+============================================ */
+const fmt = n => "$" + Math.round(n||0).toLocaleString("es-AR");
+const hoy = () => new Date().toLocaleDateString("es-AR");
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+
+// ===== Seguridad: evita XSS al insertar texto/URLs de usuarios en innerHTML =====
+function escapeHtml(str){
+  if(str===null||str===undefined) return "";
+  return String(str).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function safeImgUrl(url){
+  if(!url) return "";
+  try{
+    const u = new URL(url, location.href);
+    if(u.protocol!=="https:" && u.protocol!=="http:") return "";
+    return u.href;
+  }catch(e){ return ""; }
+}
+function get(id){ return document.getElementById(id); }
+function val(id){ const e=get(id); return e?e.value.trim():""; }
+
+function toast(msg, tipo="verde"){
+  const t=document.createElement("div");
+  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 20px;
+    border-radius:10px;font-size:.85rem;font-weight:700;background:var(--bg2);
+    border:1px solid var(--${tipo});color:var(--${tipo});box-shadow:0 4px 16px rgba(0,0,0,.4)`;
+  t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+
+// NAV
+function ir(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".menu-btn").forEach(b=>b.classList.remove("active"));
+  const pg=get("pg-"+id); if(pg) pg.classList.add("active");
+  document.querySelectorAll(".menu-btn").forEach(b=>{
+    if(b.getAttribute("onclick")?.includes(`'${id}'`)) b.classList.add("active");
+  });
+  if(window.innerWidth<=768) sbClose();
+  const fn={dashboard:actualizarDashboard,clientes:mostrarClientes,obras:mostrarObras,
+    materiales:mostrarMateriales,componentes:mostrarComponentes,tableros:mostrarTableros,
+    presupuestos:mostrarPresupuestos,facturas:mostrarFacturas,relevamiento:mostrarRelevamientos,
+    omisiones:mostrarOmisiones,compras:mostrarCompras,historial:mostrarHistorial};
+  if(fn[id]) fn[id]();
+}
+
+// SIDEBAR
+function sbToggle(){
+  get("sidebar").classList.toggle("mob-open");
+  get("sbOv").classList.toggle("on");
+  get("hb").innerHTML=get("sidebar").classList.contains("mob-open")?"&#x2715;":"&#9776;";
+}
+function sbClose(){
+  get("sidebar")?.classList.remove("mob-open");
+  get("sbOv")?.classList.remove("on");
+  const hb=get("hb"); if(hb) hb.innerHTML="&#9776;";
+}
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") sbClose(); });
+
+// TEMA
+function cambiarTema(tema){
+  const temas={
+    default:{"--bg":"#0a0f1a","--bg2":"#111827","--bg3":"#1e293b","--verde":"#22c55e"},
+    industrial:{"--bg":"#111111","--bg2":"#1a1a1a","--bg3":"#222222","--verde":"#ff6600"},
+    electrico:{"--bg":"#07101e","--bg2":"#0b1628","--bg3":"#111f35","--verde":"#00d4ff"},
+  };
+  const t=temas[tema]||temas.default;
+  Object.entries(t).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  localStorage.setItem("franz-tema",tema);
+}
+
+// DB LOCAL
+let DB={
+  clientes:     JSON.parse(localStorage.getItem("franz-clientes"))     ||[],
+  obras:        JSON.parse(localStorage.getItem("franz-obras"))        ||[],
+  materiales:   JSON.parse(localStorage.getItem("franz-materiales"))   ||[],
+  componentes:  JSON.parse(localStorage.getItem("franz-componentes"))  ||[],
+  tableros:     JSON.parse(localStorage.getItem("franz-tableros"))     ||[],
+  presupuestos: JSON.parse(localStorage.getItem("franz-presupuestos")) ||[],
+  relevamientos:JSON.parse(localStorage.getItem("franz-relevamientos"))||[],
+  omisiones:    JSON.parse(localStorage.getItem("franz-omisiones"))    ||[],
+  compras:      JSON.parse(localStorage.getItem("franz-compras"))      ||[],
+  facturas:     JSON.parse(localStorage.getItem("franz-facturas"))     ||[],
+};
+function guardarDB(k){
+  localStorage.setItem("franz-"+k,JSON.stringify(DB[k]));
+  if(typeof syncPush==="function") syncPush(k);
+}
+
+// ══════════════════════════════════════
+// PLAN GRATIS vs PRO — cuota de prueba (3 de cada cosa)
+// ══════════════════════════════════════
+const LIMITE_GRATIS = 3;
+const TABLAS_CON_LIMITE = ["clientes","obras","presupuestos","facturas"];
+
+function esPro(){
+  return typeof licenciaActual!=="undefined" && licenciaActual?.plan==="pro" && licenciaActual?.activo;
+}
+function limiteAlcanzado(tabla){
+  if(esPro()) return false;
+  return DB[tabla].length >= LIMITE_GRATIS;
+}
+function bloquearPorLimite(tabla, etiqueta){
+  toast(`Llegaste al límite de ${LIMITE_GRATIS} ${etiqueta} del plan gratis`,"yellow");
+  if(typeof mostrarModalUpgrade==="function") mostrarModalUpgrade();
+}
+// Pinta un badge "2/3" (gratis) o solo el total (pro) al lado del contador de una sección
+function textoContadorPlan(tabla){
+  const n = DB[tabla].length;
+  if(esPro()) return String(n);
+  return `${Math.min(n,LIMITE_GRATIS)}/${LIMITE_GRATIS}`;
+}
+
+// DASHBOARD
+function actualizarDashboard(){
+  const s={"st-clientes":DB.clientes.length,"st-obras":DB.obras.length,
+    "st-presupuestos":DB.presupuestos.length,"st-materiales":DB.materiales.length,
+    "st-tableros":DB.tableros.length,
+    "st-facturacion":fmt(DB.presupuestos.reduce((s,p)=>s+(p.total||0),0))};
+  Object.entries(s).forEach(([id,v])=>{const e=get(id);if(e)e.textContent=v;});
+}
+
+// CLIENTES
+function guardarCliente(){
+  if(limiteAlcanzado("clientes")){ bloquearPorLimite("clientes","clientes"); return; }
+  const nombre=val("cl-nombre");
+  if(!nombre){toast("El nombre es obligatorio","red");return;}
+  DB.clientes.push({id:uid(),nombre,tel:val("cl-tel"),dir:val("cl-dir"),
+    email:val("cl-email"),obs:val("cl-obs"),fecha:hoy()});
+  guardarDB("clientes");
+  ["cl-nombre","cl-tel","cl-dir","cl-email","cl-obs"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarClientes(); actualizarDashboard(); sincronizarSelectClientes();
+  toast("Cliente guardado");
+}
+function eliminarCliente(id){
+  if(!confirm("Eliminar cliente?")) return;
+  DB.clientes=DB.clientes.filter(c=>c.id!==id);
+  guardarDB("clientes"); mostrarClientes(); actualizarDashboard(); sincronizarSelectClientes();
+}
+function filtrarClientes(txt){
+  renderClientes(DB.clientes.filter(c=>c.nombre.toLowerCase().includes(txt.toLowerCase())||(c.tel||"").includes(txt)));
+}
+function mostrarClientes(){ renderClientes(DB.clientes); }
+function renderClientes(lista){
+  const cnt=get("cl-count"); if(cnt) cnt.textContent=textoContadorPlan("clientes");
+  const cont=get("lista-clientes"); if(!cont) return;
+  if(!lista.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin clientes.</p>`;return;}
+  cont.innerHTML=lista.map(c=>`<div class="item"><div class="item-row">
+    <div><b>${c.nombre}</b><br><small>📞 ${c.tel||"—"} | 📍 ${c.dir||"—"} | 📅 ${c.fecha}</small>
+    ${c.obs?`<br><small style="color:var(--muted2)">📝 ${c.obs}</small>`:""}</div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="eliminarCliente('${c.id}')">✕</button></div>
+    </div></div>`).join("");
+}
+function sincronizarSelectClientes(){
+  ["ob-cliente","tab-obra","pres-cliente","fac-cliente"].forEach(id=>{
+    const sel=get(id); if(!sel) return;
+    const v=sel.value;
+    sel.innerHTML=`<option value="">— Seleccionar —</option>`;
+    DB.clientes.forEach(c=>{sel.innerHTML+=`<option value="${c.nombre}">${c.nombre}</option>`;});
+    sel.value=v;
+  });
+}
+
+// OBRAS
+function guardarObra(){
+  if(limiteAlcanzado("obras")){ bloquearPorLimite("obras","obras"); return; }
+  const cliente=val("ob-cliente"), nombre=val("ob-nombre");
+  if(!cliente||!nombre){toast("Cliente y nombre son obligatorios","red");return;}
+  DB.obras.push({id:uid(),cliente,nombre,dir:val("ob-dir"),tel:val("ob-tel"),
+    fecha:val("ob-fecha"),estado:val("ob-estado"),prioridad:val("ob-prioridad"),
+    obs:val("ob-obs"),aea:val("ob-aea"),fechaReg:hoy()});
+  guardarDB("obras");
+  ["ob-nombre","ob-dir","ob-tel","ob-obs","ob-aea"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarObras(); actualizarDashboard(); toast("Obra guardada");
+}
+async function eliminarObra(id){
+  if(!confirm("Eliminar obra?")) return;
+  DB.obras=DB.obras.filter(o=>o.id!==id);
+  guardarDB("obras"); mostrarObras(); actualizarDashboard();
+  const fotos=await obtenerFotosDB("obra",id);
+  for(const f of fotos) await eliminarFotoDB(f.id);
+  const firmas=await obtenerFotosDB("obra_firma",id);
+  for(const f of firmas) await eliminarFotoDB(f.id);
+}
+function filtrarObras(txt){
+  const est=val("ob-filtro-estado");
+  renderObras(DB.obras.filter(o=>{
+    const mT=!txt||o.nombre.toLowerCase().includes(txt.toLowerCase())||o.cliente.toLowerCase().includes(txt.toLowerCase());
+    const mE=!est||o.estado===est; return mT&&mE;
+  }));
+}
+function mostrarObras(){ renderObras(DB.obras); }
+const bE=e=>{const m={Pendiente:"badge-blue","En proceso":"badge-yellow",Finalizada:"badge-green"};
+  return `<span class="badge ${m[e]||"badge-cyan"}">${e||"—"}</span>`;};
+const bP=p=>{const m={Normal:"badge-green",Alta:"badge-yellow",Urgente:"badge-red"};
+  return `<span class="badge ${m[p]||"badge-cyan"}">${p||"—"}</span>`;};
+function renderObras(lista){
+  const cnt=get("ob-count"); if(cnt) cnt.textContent=textoContadorPlan("obras");
+  const cont=get("lista-obras"); if(!cont) return;
+  if(!lista.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin obras.</p>`;return;}
+  cont.innerHTML=lista.map(o=>`<div class="item"><div class="item-row">
+    <div><b>${escapeHtml(o.nombre)}</b> ${bE(o.estado)} ${bP(o.prioridad)}<br>
+    <small>👤 ${escapeHtml(o.cliente)} | 📍 ${escapeHtml(o.dir)||"—"} | 📅 ${o.fecha||o.fechaReg}</small>
+    ${o.obs?`<br><small style="color:var(--muted2)">📝 ${escapeHtml(o.obs)}</small>`:""}
+    ${o.notasFinal?`<br><small style="color:var(--verde)">✅ Cierre: ${escapeHtml(o.notasFinal)}</small>`:""}
+    </div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm btn-foto-galeria" id="ob-fotobtn-${o.id}" onclick="verGaleria('obra','${o.id}','Evidencia — ${escapeHtml(o.nombre)}')">📷…</button>
+      ${o.tieneFirma?`<button class="btn btn-outline btn-sm" onclick="verGaleria('obra_firma','${o.id}','Firma de ${escapeHtml(o.firmante)||'conformidad'}')">🖊️</button>`:""}
+      <button class="btn btn-verde btn-sm" onclick="abrirFinalizarObra('${o.id}')">✅ Finalizar</button>
+      <button class="btn btn-red btn-sm" onclick="eliminarObra('${o.id}')">✕</button>
+    </div>
+    </div></div>`).join("");
+  pintarBotonesFotos("obra", lista.map(o=>o.id), "ob-fotobtn-");
+}
+
+// ===== FINALIZAR OBRA: materiales usados/modificaciones + fotos de comprobante =====
+function abrirFinalizarObra(id){
+  const o=DB.obras.find(x=>x.id===id); if(!o) return;
+  limpiarFotosPendientes("fin","fin-fotos-preview");
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.innerHTML=`
+    <div class="modal-box">
+      <h3 style="margin-bottom:4px">✅ Finalizar obra</h3>
+      <p style="color:var(--muted2);font-size:.82rem;margin-bottom:14px">${escapeHtml(o.nombre)} — ${escapeHtml(o.cliente)}</p>
+      <div class="fld">
+        <label>Materiales utilizados / modificaciones realizadas</label>
+        <textarea id="fin-notas" placeholder="Ej: se instaló tablero 12 módulos, diferencial 40A 30mA, cambio de cable a 4mm² en circuito de cocina...">${escapeHtml(o.notasFinal)||""}</textarea>
+      </div>
+      <div class="fld">
+        <label>📷 Fotos como comprobante</label>
+        <div class="foto-picker">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer">
+            📷 Tomar / subir foto
+            <input type="file" accept="image/*" capture="environment" multiple style="display:none"
+              onchange="manejarSeleccionFotos(this,'fin','fin-fotos-preview')">
+          </label>
+          <small style="color:var(--muted2)">Materiales colocados, estado final, etc.</small>
+        </div>
+        <div id="fin-fotos-preview" class="foto-mini-grid"></div>
+      </div>
+      <div class="fld">
+        <label>🖊️ Firma de conformidad del cliente (opcional)</label>
+        <canvas id="fin-firma-canvas" style="width:100%;height:150px;border:1px solid var(--border);border-radius:8px;touch-action:none;display:block"></canvas>
+        <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+          <input type="text" id="fin-firma-nombre" placeholder="Nombre y DNI de quien firma" style="flex:1">
+          <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFirma('fin-firma-canvas')">Borrar</button>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-verde" onclick="guardarFinalizacionObra('${id}')">💾 Confirmar finalización</button>
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  initFirmaCanvas("fin-firma-canvas");
+  modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
+}
+async function guardarFinalizacionObra(id){
+  const o=DB.obras.find(x=>x.id===id); if(!o) return;
+  o.estado="Finalizada";
+  o.notasFinal=val("fin-notas");
+  o.fechaFin=hoy();
+  const firmaURL=typeof obtenerFirmaDataURL==="function"?obtenerFirmaDataURL("fin-firma-canvas"):null;
+  if(firmaURL){
+    o.firmante=val("fin-firma-nombre");
+    o.tieneFirma=true;
+    try{ await guardarFotoDB("obra_firma", id, firmaURL, "firma"); }catch(e){ console.error(e); }
+  }
+  guardarDB("obras");
+  await confirmarFotosPendientes("fin","obra",id,"finalizacion");
+  limpiarFotosPendientes("fin","fin-fotos-preview");
+  document.querySelector(".modal-overlay")?.remove();
+  mostrarObras(); actualizarDashboard();
+  toast("Obra finalizada con evidencia guardada");
+}
+
+// MATERIALES — buscador tipo ML
+function guardarMaterial(){
+  const nombre=val("mat-nombre");
+  if(!nombre){toast("Nombre obligatorio","red");return;}
+  DB.materiales.push({id:uid(),nombre,categoria:val("mat-categoria"),marca:val("mat-marca"),
+    modelo:val("mat-modelo"),caract:val("mat-caract"),proveedor:val("mat-prov"),obs:val("mat-obs"),fecha:hoy()});
+  guardarDB("materiales");
+  ["mat-nombre","mat-marca","mat-modelo","mat-caract","mat-prov","mat-obs"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarMateriales(); actualizarDashboard(); toast("Material guardado");
+}
+function eliminarMaterial(id){
+  if(!confirm("Eliminar material?")) return;
+  DB.materiales=DB.materiales.filter(m=>m.id!==id);
+  guardarDB("materiales"); mostrarMateriales(); actualizarDashboard();
+}
+function buscarMateriales(txt){
+  const res=get("mat-resultados"); if(!res) return;
+  if(!txt||txt.length<2){res.classList.remove("visible");return;}
+  const f=DB.materiales.filter(m=>m.nombre.toLowerCase().includes(txt.toLowerCase())||
+    (m.marca||"").toLowerCase().includes(txt.toLowerCase())||
+    (m.categoria||"").toLowerCase().includes(txt.toLowerCase())).slice(0,12);
+  if(!f.length){res.innerHTML=`<div class="br-item"><small style="color:var(--muted)">Sin resultados</small></div>`;res.classList.add("visible");return;}
+  res.innerHTML=f.map(m=>`<div class="br-item" onclick="seleccionarMaterial('${m.id}')">
+    <b>${m.nombre}</b><small>${m.categoria} · ${m.marca||"—"}</small></div>`).join("");
+  res.classList.add("visible");
+}
+function seleccionarMaterial(id){
+  const m=DB.materiales.find(x=>x.id===id); if(!m) return;
+  get("mat-resultados").classList.remove("visible");
+  get("mat-buscar").value=m.nombre;
+  mostrarMateriales(m.nombre);
+}
+document.addEventListener("click",e=>{if(!e.target.closest(".buscador-wrap"))get("mat-resultados")?.classList.remove("visible");});
+function mostrarMateriales(filtro=""){
+  const cats=[...new Set(DB.materiales.map(m=>m.categoria))];
+  const tabsEl=get("mat-tabs");
+  if(tabsEl){
+    tabsEl.innerHTML=`<div class="tab on" onclick="filtrarMatCat(this,'')">Todos</div>`+
+      cats.map(c=>`<div class="tab" onclick="filtrarMatCat(this,'${c}')">${c}</div>`).join("");
+  }
+  renderMateriales(filtro?DB.materiales.filter(m=>m.nombre.toLowerCase().includes(filtro.toLowerCase())):DB.materiales);
+}
+function filtrarMatCat(el,cat){
+  document.querySelectorAll("#mat-tabs .tab").forEach(t=>t.classList.remove("on"));
+  el.classList.add("on");
+  renderMateriales(cat?DB.materiales.filter(m=>m.categoria===cat):DB.materiales);
+}
+let matPagLista=[]; let matPagShown=0; const MAT_PAG_SIZE=150;
+function renderMateriales(lista){
+  const cnt=get("mat-count"); if(cnt) cnt.textContent=DB.materiales.length;
+  matPagLista=lista; matPagShown=0;
+  const cont=get("lista-materiales"); if(!cont) return;
+  if(!lista.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin materiales.</p>`;return;}
+  cont.innerHTML="";
+  renderMasMateriales();
+}
+const CATEGORIAS_GRATIS = ["Cables","Canalización","Cajas"];
+function materialItemHTML(m){
+  const bloqueado = !esPro() && !CATEGORIAS_GRATIS.includes(m.categoria);
+  if(bloqueado){
+    return `<div class="item item-bloqueado" onclick="mostrarModalUpgrade()">
+      <div class="item-row">
+        <div><b>${m.nombre}</b> <span class="badge badge-cyan">${m.categoria}</span> 🔒<br>
+        <small>Disponible en el plan Pro</small></div>
+        <div class="item-actions"><span class="btn btn-outline btn-sm" style="opacity:.5">🔒</span></div>
+      </div></div>`;
+  }
+  return `<div class="item"><div class="item-row">
+    <div><b>${m.nombre}</b> <span class="badge badge-cyan">${m.categoria}</span><br>
+    <small>🏭 ${m.marca||"—"} ${m.modelo?("· "+m.modelo):""} ${m.caract?("· "+m.caract):""}</small>
+    ${m.proveedor?`<br><small style="color:var(--muted2)">🚚 ${m.proveedor}</small>`:""}</div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm" onclick="agregarMaterialACompra('${m.id}')">🛒</button>
+      <button class="btn btn-outline btn-sm" onclick="agregarMaterialAPres('${m.id}')">📋</button>
+      <button class="btn btn-red btn-sm" onclick="eliminarMaterial('${m.id}')">✕</button>
+    </div></div></div>`;
+}
+function renderMasMateriales(){
+  const cont=get("lista-materiales"); if(!cont) return;
+  const viejoBtn=get("mat-mas-btn"); if(viejoBtn) viejoBtn.remove();
+  const tanda=matPagLista.slice(matPagShown, matPagShown+MAT_PAG_SIZE);
+  cont.insertAdjacentHTML("beforeend", tanda.map(materialItemHTML).join(""));
+  matPagShown+=tanda.length;
+  if(matPagShown<matPagLista.length){
+    const btn=document.createElement("button");
+    btn.id="mat-mas-btn"; btn.className="btn btn-outline btn-full";
+    btn.style.marginTop="10px";
+    btn.textContent=`⬇ Mostrar más (${matPagLista.length-matPagShown} restantes)`;
+    btn.onclick=renderMasMateriales;
+    cont.appendChild(btn);
+  }
+}
+function agregarMaterialACompra(id){
+  const m=DB.materiales.find(x=>x.id===id); if(!m) return;
+  const cant=parseInt(prompt("Cantidad de "+m.nombre+":"))||1;
+  DB.compras.push({id:uid(),nombre:m.nombre,cant,prov:m.proveedor||"",fecha:hoy()});
+  guardarDB("compras"); toast(m.nombre+" agregado a compras");
+}
+function agregarMaterialAPres(id){
+  const m=DB.materiales.find(x=>x.id===id); if(!m) return;
+  const cant=parseInt(prompt("Cantidad:"))||1;
+  const precio=parseFloat(prompt("Precio unitario ($):")||"0")||0;
+  presItemsActual.push({nombre:m.nombre,cant,precio});
+  renderPresItems(); ir("presupuestos"); toast(m.nombre+" agregado al presupuesto");
+}
+
+// COMPONENTES
+function guardarComponente(){
+  const nombre=val("comp-nombre");
+  if(!nombre){toast("Nombre obligatorio","red");return;}
+  DB.componentes.push({id:uid(),nombre,cat:val("comp-cat"),subcat:val("comp-subcat"),
+    marca:val("comp-marca"),modelo:val("comp-modelo"),amp:val("comp-amp"),
+    polos:val("comp-polos"),norma:val("comp-norma"),obs:val("comp-obs"),fecha:hoy()});
+  guardarDB("componentes");
+  ["comp-nombre","comp-subcat","comp-marca","comp-modelo","comp-amp","comp-norma","comp-obs"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarComponentes(); toast("Componente guardado");
+}
+function eliminarComponente(id){
+  if(!confirm("Eliminar?")) return;
+  DB.componentes=DB.componentes.filter(c=>c.id!==id);
+  guardarDB("componentes"); mostrarComponentes();
+}
+function filtrarComponentes(txt){
+  const cat=val("comp-filtro-cat");
+  renderComponentes(DB.componentes.filter(c=>{
+    const mT=!txt||c.nombre.toLowerCase().includes(txt.toLowerCase())||(c.marca||"").toLowerCase().includes(txt.toLowerCase());
+    const mC=!cat||c.cat===cat; return mT&&mC;
+  }));
+}
+function mostrarComponentes(){ renderComponentes(DB.componentes); }
+function renderComponentes(lista){
+  const cnt=get("comp-count"); if(cnt) cnt.textContent=DB.componentes.length;
+  const cont=get("lista-componentes"); if(!cont) return;
+  if(!lista.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin componentes.</p>`;return;}
+  cont.innerHTML=lista.map(c=>`<div class="item"><div class="item-row">
+    <div><b>${c.nombre}</b> <span class="badge badge-blue">${c.cat}</span><br>
+    <small>${c.marca||"—"} · ${c.modelo||""} · ${c.amp||""} · ${c.polos||""}</small>
+    ${c.norma?`<br><small style="color:var(--muted2)">📋 ${c.norma}</small>`:""}</div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="eliminarComponente('${c.id}')">✕</button></div>
+    </div></div>`).join("");
+}
+
+// PLANTILLAS
+const ACTIVIDADES=[
+  {id:"canalizacion",ico:"🔧",nombre:"Canalización",mats:["Caño PVC rígido 20mm (barra 3m)","Caño PVC rígido 25mm (barra 3m)","Caño PVC corrugado flexible 20mm (rollo)","Conector recto PVC 20mm","Conector recto PVC 25mm","Unión PVC 20mm","Curva 90° PVC 20mm","Curva 90° PVC 25mm","Abrazadera metálica 20mm","Abrazadera plástica 20mm","Caja rectangular PVC embutir","Caja octogonal PVC embutir","Caja cuadrada PVC 10x10","Tapa registro PVC 20mm","Taco Fisher S6 (bolsa)","Tornillo autoperforante 6x50mm","Sellador elástico poliuretánico","Canaleta plástica 20x12mm con tapa","Broca widia 6mm","Broca widia 8mm"]},
+  {id:"cableado",ico:"⚡",nombre:"Cableado",mats:["Cable unipolar 1,5mm² Negro","Cable unipolar 1,5mm² Celeste","Cable unipolar 1,5mm² Verde/Amarillo","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Cable unipolar 4mm² Negro","Cable unipolar 4mm² Celeste","Wago 3 entradas 2,5mm² (blister)","Wago 5 entradas 2,5mm² (blister)","Capuchón de empalme azul (bolsa)","Cinta aisladora 3M Scotch 33","Terminal tubular 1,5mm²","Terminal tubular 2,5mm²","Precinto plástico 15cm (bolsa)","Etiqueta identificadora de cables"]},
+  {id:"tablero_mono",ico:"📦",nombre:"Tablero monofásico",mats:["Gabinete DIN 12 módulos embutir","Interruptor diferencial 2P 40A 30mA - Schneider","Interruptor termomagnético 1P 16A curva C - Schneider Acti9","Interruptor termomagnético 1P 20A curva C - Schneider Acti9","Interruptor termomagnético 1P 10A curva C - Schneider Acti9","Riel DIN 35mm (barra 2m)","Peine unifilar 6 módulos","Barra de neutros 10 posiciones","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Terminal tubular 2,5mm²","Bornera de paso 2,5mm² (unidad)","Canaleta ranurada para tablero 40x40mm"]},
+  {id:"tablero_tri",ico:"⚡⚡",nombre:"Tablero trifásico",mats:["Gabinete DIN 24 módulos embutir","Interruptor diferencial 4P 63A 30mA - Schneider","Interruptor termomagnético 2P 25A curva C - Schneider Acti9 (general)","Interruptor termomagnético 3P 25A curva C - Schneider Acti9","Interruptor termomagnético 3P 32A curva C - Schneider Acti9","Riel DIN 35mm (barra 2m)","Peine trifásico 6 módulos","Barra de neutros 20 posiciones","Cable unipolar 6mm² Negro","Cable unipolar 6mm² Celeste","Cable unipolar 6mm² Verde/Amarillo","Terminal tubular 6mm²","Voltímetro digital de tablero 96x96","Amperímetro digital de tablero 96x96","Transformador de corriente (TI) 100/5A"]},
+  {id:"pat",ico:"🌎",nombre:"Puesta a tierra",mats:["Jabalina copperweld 1,5m 5/8\"","Caja de inspección PAT 20x20cm","Grampa jabalina bronce 5/8\"","Cable desnudo cobre 16mm² (PAT)","Barra equipotencial de cobre 12 bornes","Gel conductor para jabalina","Soldadura exotérmica cartucho 90g","Bentonita conductiva (bolsa 5kg)","Cinta aisladora 3M Scotch 33","Conector bimetálico Cu/Al"]},
+  {id:"iluminacion",ico:"💡",nombre:"Iluminación",mats:["Caja octogonal PVC embutir","Cable unipolar 1,5mm² Negro","Cable unipolar 1,5mm² Celeste","Cable unipolar 1,5mm² Verde/Amarillo","Llave simple 1 punto - Cambre Siglo XXII","Llave combinación 2 puntos - Cambre Siglo XXII","Placa 1 módulo - Cambre Siglo XXII","Panel LED embutir redondo 12W","Panel LED embutir redondo 18W","Sensor de movimiento PIR embutir","Sensor crepuscular fotocélula","Wago 3 entradas 2,5mm²","Cinta aisladora 3M Scotch 33"]},
+  {id:"tomas",ico:"🔌",nombre:"Tomas y llaves",mats:["Caja rectangular PVC embutir","Toma 2P+T 10A embutir - Cambre Siglo XXII","Toma 2P+T 20A embutir - Cambre Siglo XXII","Placa 1 módulo - Cambre Siglo XXII","Placa 2 módulos - Cambre Siglo XXII","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Wago 3 entradas 2,5mm²","Toma USB doble embutir","Cinta aisladora 3M Scotch 33"]},
+  {id:"acometida",ico:"🏗",nombre:"Acometida / pilar",mats:["Caja de inspección PAT 30x30cm","Caño PVC rígido 50mm (barra 3m)","Conector recto PVC 50mm","Jabalina copperweld 1,5m 5/8\"","Grampa jabalina bronce 5/8\"","Cable unipolar 10mm² Negro","Cable unipolar 10mm² Celeste","Cable desnudo cobre 16mm² (PAT)","Base portafusible NH tamaño 00 tripolar","Fusible NH tamaño 00 25A","Cinta aisladora 3M Scotch 33"]},
+  {id:"refrigeracion",ico:"❄",nombre:"Refrigeración",mats:["Contactor 9A 220V para compresor","Relé térmico 4-6A para compresor","Termostato digital PID cámara fría","Temporizador de descongelamiento electromecánico","Capacitor de marcha 30µF 440V","Capacitor de arranque 200µF 250V","Protector térmico Klixon compresor","Presostato de alta y baja combinado","Válvula solenoide refrigeración 220V","Caja estanca IP65 2 bocas","Toma estanca IP66 2P+T 10A exterior","Cable flexible 3x2,5mm² p/AC","Canalización flexible armada para AC 1/2\""]},
+  {id:"hvac",ico:"🌡",nombre:"Aire acondicionado",mats:["Placa control aire acondicionado split 9000BTU (genérica)","Capacitor para motor de aire acondicionado 35µF","Contactor para condensadora AC 25A","Termostato de ambiente digital","Sensor de temperatura NTC para AC","Cable flexible 3x2,5mm² p/AC","Canalización flexible armada para AC 1/2\"","Soporte de pared para condensadora AC","Base antivibratoria para condensadora AC"]},
+  {id:"automatizacion",ico:"🤖",nombre:"Automatización industrial",mats:["PLC compacto 24 I/O 220V","HMI táctil 7\"","Contactor tripolar 18A bobina 220V","Relé auxiliar 24V 4 contactos","Zócalo para relé auxiliar 11 pines","Sensor inductivo M12 NO","Pulsador plástico verde NA 22mm","Seta de emergencia NC 22mm","Fuente switching 24V 5A DIN","Bornera de paso 2,5mm² (unidad)","Terminal tubular 2,5mm²","Canaleta ranurada industrial 60x60mm"]},
+  {id:"domotica",ico:"🏠",nombre:"Domótica",mats:["Relé inteligente WiFi para luces 1 canal","Interruptor táctil domótico WiFi 1 punto","Toma inteligente WiFi 10A","Central domótica (hub) Zigbee/WiFi","Sensor de puerta/ventana Zigbee","Sensor de movimiento Zigbee","Cerradura inteligente WiFi","Cortina motorizada control WiFi","Termostato inteligente WiFi"]},
+  {id:"solar",ico:"☀",nombre:"Energía solar",mats:["Panel solar monocristalino 450W","Inversor on-grid 5kW monofásico","Controlador de carga MPPT 60A","Descargador de sobretensión (DPS) DC 1000V","Conector MC4 macho/hembra (par)","Cable solar 6mm² rojo (1500Vdc)","Cable solar 6mm² negro (1500Vdc)","Interruptor diferencial tipo B 40A 30mA","Fusible NH tamaño 00 63A","Estructura de montaje techo inclinado (kit por panel)","Caja de conexiones DC (string box)","Medidor bidireccional de energía"]},
+  {id:"cctv",ico:"📷",nombre:"CCTV / Seguridad",mats:["Cámara IP 2MP exterior con visión nocturna","Cámara IP 4MP domo interior","DVR/NVR 8 canales","Disco rígido para videovigilancia 1TB","Cable UTP Cat6 (rollo 305m)","Conector RJ45 Cat6 (bolsa x50)","Fuente switching 12V 5A para CCTV","Switch PoE 8 puertos","Patch cord Cat6 (unidad 3m)","Rack de pared 6U"]},
+  {id:"industrial_motor",ico:"⚙",nombre:"Arranque de motores",mats:["Contactor tripolar 25A bobina 220V","Relé térmico regulable 9-13A","Guardamotor regulable 9-13A","Variador de frecuencia 2HP","Pulsador plástico verde NA 22mm","Pulsador plástico rojo NC 22mm","Seta de emergencia NC 22mm","Selector de 2 posiciones 22mm","Bornera enchufable 3 polos","Cable unipolar 4mm² Negro"]},
+  {id:"camara_frigorifica",ico:"🧊",nombre:"Cámara frigorífica",mats:["Contactor 18A 220V para compresor","Relé térmico regulable 12-18A","Termostato digital PID cámara fría","Temporizador de descongelamiento electromecánico","Presostato de alta y baja combinado","Válvula solenoide refrigeración 220V","Resistencia de cárter compresor","Motor de ventilador evaporador 1/6HP","Gabinete DIN 12 módulos IP65 exterior","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Caja estanca IP65 4 bocas","Canalización flexible armada para AC 3/4\""]},
+  {id:"porton_automatico",ico:"🚪",nombre:"Portón automático",mats:["Motor para portón corredizo","Central de control de accesos","Fotocélula de seguridad (par)","Baliza luminosa 220V","Cremallera para portón corredizo (tramo)","Pulsador plástico verde NA 22mm","Seta de emergencia NC 22mm","Caño PVC rígido 20mm (barra 3m)","Cable unipolar 1,5mm² Negro","Cable unipolar 1,5mm² Celeste","Interruptor termomagnético 1P 10A curva C - Schneider Acti9","Jabalina copperweld 1,5m 5/8\""]},
+  {id:"ascensor",ico:"🛗",nombre:"Ascensor (tablero de máquinas)",mats:["Gabinete DIN 24 módulos embutir","Interruptor diferencial 4P 40A 30mA - Schneider","Interruptor termomagnético 3P 25A curva C - Schneider Acti9","Contactor tripolar 32A bobina 220V","Relé térmico regulable 17-25A","PLC compacto 24 I/O 220V","Pulsador plástico rojo NC 22mm","Seta de emergencia NC 22mm","Fuente switching 24V 5A DIN","Barra de neutros 20 posiciones","Cable unipolar 4mm² Negro","Cable unipolar 4mm² Celeste","Cable unipolar 4mm² Verde/Amarillo","Terminal tubular 4mm²"]},
+];
+
+let actividadSeleccionada=null;
+function iniciarPlantillas(){
+  const grid=get("act-grid"); if(!grid) return;
+  grid.innerHTML=ACTIVIDADES.map(a=>`<div class="act-card" id="act-${a.id}" onclick="seleccionarActividad('${a.id}')">
+    <div class="act-ico">${a.ico}</div><div class="act-name">${a.nombre}</div></div>`).join("");
+}
+function seleccionarActividad(id){
+  document.querySelectorAll(".act-card").forEach(c=>c.classList.remove("sel"));
+  const el=get("act-"+id); if(el) el.classList.add("sel");
+  actividadSeleccionada=ACTIVIDADES.find(a=>a.id===id); if(!actividadSeleccionada) return;
+  get("act-nombre-sel").textContent=actividadSeleccionada.nombre;
+  const lista=get("lista-plantilla");
+  lista.innerHTML=actividadSeleccionada.mats.map((m,i)=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center">
+    <span><b>${m}</b></span>
+    <input type="number" value="1" min="0" style="width:70px;margin:0;padding:5px 8px;font-size:.82rem" id="plt-cant-${i}">
+    </div>`).join("");
+  get("panel-plantilla-resultado").style.display="block";
+  get("panel-plantilla-resultado").scrollIntoView({behavior:"smooth"});
+}
+function pasarPlantillaAPresupuesto(){
+  if(!actividadSeleccionada){toast("Seleccioná una actividad","red");return;}
+  actividadSeleccionada.mats.forEach((m,i)=>{
+    const cant=parseInt(get("plt-cant-"+i)?.value)||1;
+    if(cant>0) presItemsActual.push({nombre:m,cant,precio:0});
+  });
+  renderPresItems(); ir("presupuestos"); toast("Materiales pasados al presupuesto");
+}
+function pasarPlantillaACompras(){
+  if(!actividadSeleccionada){toast("Seleccioná una actividad","red");return;}
+  actividadSeleccionada.mats.forEach((m,i)=>{
+    const cant=parseInt(get("plt-cant-"+i)?.value)||1;
+    if(cant>0) DB.compras.push({id:uid(),nombre:m,cant,prov:"",fecha:hoy()});
+  });
+  guardarDB("compras"); ir("compras"); toast("Materiales agregados a compras");
+}
+
+// TABLEROS
+function guardarTablero(){
+  const nombre=val("tab-nombre");
+  if(!nombre){toast("Nombre obligatorio","red");return;}
+  DB.tableros.push({id:uid(),nombre,tipo:val("tab-tipo"),circuitos:parseInt(val("tab-circuitos"))||6,
+    obra:val("tab-obra"),diferencial:val("tab-diferencial"),obs:val("tab-obs"),fecha:hoy()});
+  guardarDB("tableros");
+  ["tab-nombre","tab-circuitos","tab-obs"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarTableros(); actualizarDashboard(); toast("Tablero guardado");
+}
+function eliminarTablero(id){
+  if(!confirm("Eliminar tablero?")) return;
+  DB.tableros=DB.tableros.filter(t=>t.id!==id);
+  guardarDB("tableros"); mostrarTableros(); actualizarDashboard();
+}
+function mostrarTableros(){
+  const cnt=get("tab-count"); if(cnt) cnt.textContent=DB.tableros.length;
+  const cont=get("lista-tableros"); if(!cont) return;
+  if(!DB.tableros.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin tableros.</p>`;return;}
+  cont.innerHTML=DB.tableros.map(t=>`<div class="item"><div class="item-row">
+    <div><b>${t.nombre}</b> <span class="badge badge-cyan">${t.tipo}</span><br>
+    <small>🔌 ${t.circuitos} circuitos | Diferencial: ${t.diferencial} | 📅 ${t.fecha}</small><br>
+    <small style="color:var(--verde)">✔ Gabinete ✔ Diferencial ${t.diferencial} ✔ ${t.circuitos} térmicas ✔ Riel DIN ✔ Barra neutros+tierra</small>
+    </div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="eliminarTablero('${t.id}')">✕</button></div>
+    </div></div>`).join("");
+}
+
+// PRESUPUESTOS
+let presItemsActual=[];
+function agregarItemPres(){
+  const nombre=val("pres-item-nombre");
+  if(!nombre){toast("Ingresá el ítem","red");return;}
+  const cant=parseFloat(val("pres-item-cant"))||1;
+  const precio=parseFloat(val("pres-item-precio"))||0;
+  presItemsActual.push({nombre,cant,precio});
+  ["pres-item-nombre","pres-item-cant","pres-item-precio"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  renderPresItems();
+}
+function quitarItemPres(i){ presItemsActual.splice(i,1); renderPresItems(); }
+function renderPresItems(){
+  const cont=get("pres-items"); if(!cont) return;
+  if(!presItemsActual.length){cont.innerHTML=`<p style="color:var(--muted);font-size:.82rem;margin-top:8px">Sin ítems.</p>`;actualizarTotalPres();return;}
+  cont.innerHTML=presItemsActual.map((item,i)=>`<div class="item"><div class="item-row">
+    <div><b>${item.nombre}</b><br><small>Cant: ${item.cant} | Precio: ${fmt(item.precio)} | <b style="color:var(--verde)">Sub: ${fmt(item.cant*item.precio)}</b></small></div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="quitarItemPres(${i})">✕</button></div>
+    </div></div>`).join("");
+  actualizarTotalPres();
+}
+function actualizarTotalPres(){
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+  const total=totalMat+mo;
+  const cont=get("pres-total"); if(!cont) return;
+  cont.innerHTML=`<div class="total-box">
+    <div><div class="lbl">Materiales</div><div class="val">${fmt(totalMat)}</div></div>
+    <div><div class="lbl">Mano de obra</div><div class="val">${fmt(mo)}</div></div>
+    <div><div class="lbl">TOTAL</div><div class="val">${fmt(total)}</div></div>
+    </div>`;
+}
+function guardarPresupuesto(){
+  if(limiteAlcanzado("presupuestos")){ bloquearPorLimite("presupuestos","presupuestos"); return; }
+  const cliente=val("pres-cliente");
+  if(!cliente){toast("Seleccioná un cliente","red");return;}
+  if(!presItemsActual.length){toast("Agregá al menos un ítem","red");return;}
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+  DB.presupuestos.push({id:uid(),cliente,obra:val("pres-obra"),items:[...presItemsActual],mo,total:totalMat+mo,fecha:hoy()});
+  guardarDB("presupuestos");
+  presItemsActual=[]; renderPresItems();
+  const e=get("pres-mo"); if(e) e.value="";
+  mostrarPresupuestos(); actualizarDashboard(); toast("Presupuesto guardado");
+}
+function eliminarPresupuesto(id){
+  if(!confirm("Eliminar?")) return;
+  DB.presupuestos=DB.presupuestos.filter(p=>p.id!==id);
+  guardarDB("presupuestos"); mostrarPresupuestos(); actualizarDashboard();
+}
+function mostrarPresupuestos(){
+  const cnt=get("pres-count"); if(cnt) cnt.textContent=textoContadorPlan("presupuestos");
+  const cont=get("lista-presupuestos"); if(!cont) return;
+  if(!DB.presupuestos.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin presupuestos.</p>`;return;}
+  cont.innerHTML=DB.presupuestos.map(p=>`<div class="item"><div class="item-row">
+    <div><b>${p.cliente}</b>${p.obra?" — "+p.obra:""}<br>
+    <small>📅 ${p.fecha} | ${p.items.length} ítems | <b style="color:var(--verde)">${fmt(p.total)}</b></small></div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm" onclick="exportarPresPDFById('${p.id}')">📄</button>
+      <button class="btn btn-outline btn-sm" onclick="exportarPresWAById('${p.id}')">💬</button>
+      <button class="btn btn-verde btn-sm" onclick="generarFacturaDesdePresupuesto('${p.id}')">🧾</button>
+      <button class="btn btn-red btn-sm" onclick="eliminarPresupuesto('${p.id}')">✕</button>
+    </div></div></div>`).join("");
+}
+// ══════════════════════════════════════
+// MEMBRETE PROFESIONAL PARA PDFs (presupuestos y facturas)
+// ══════════════════════════════════════
+function datosEmpresaPDF(){
+  const ed = (typeof licenciaActual!=="undefined" && licenciaActual?.empresa_data) || {};
+  return {
+    nombre: ed.nombre || licenciaActual?.empresa || "Electricista Matriculado",
+    tel: ed.tel || "", dir: ed.dir || "",
+    email: ed.email || (typeof usuarioActual!=="undefined" && usuarioActual?.email) || "",
+    cuit: ed.cuit || "", web: ed.web || "",
+    logo: (esPro() && licenciaActual?.logo_url) ? licenciaActual.logo_url : null,
+  };
+}
+function membretePDF(){
+  const e = datosEmpresaPDF();
+  const contacto = [e.tel&&`📞 ${e.tel}`, e.email&&`✉ ${e.email}`, e.dir&&`📍 ${e.dir}`, e.cuit&&`CUIT ${e.cuit}`]
+    .filter(Boolean).join(" &nbsp;·&nbsp; ");
+  return `<div class="membrete">
+    ${e.logo?`<img src="${e.logo}" class="logo">`:`<div class="logo-fallback">⚡</div>`}
+    <div><div class="emp-nombre">${e.nombre}</div>
+    ${contacto?`<div class="emp-contacto">${contacto}</div>`:""}</div>
+  </div>`;
+}
+// Free: pequeño crédito de la app al pie. Pro: documento limpio, sin marca ajena.
+function creditoAppPDF(){
+  if (esPro()) return "";
+  return `<div class="app-credit">Hecho con <b>Franz Electricista</b> — app de gestión diseñada para técnicos e ingenieros · una marca de Franz Electricidad</div>`;
+}
+const ESTILOS_PDF = `
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:36px 40px;font-size:12px;color:#1e293b}
+  .membrete{display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:3px solid #16a34a;margin-bottom:20px}
+  .membrete .logo{width:52px;height:52px;object-fit:cover;border-radius:8px}
+  .membrete .logo-fallback{width:52px;height:52px;border-radius:8px;background:#16a34a;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:24px}
+  .emp-nombre{font-size:19px;font-weight:700;color:#0f172a}
+  .emp-contacto{font-size:10.5px;color:#64748b;margin-top:2px}
+  .doc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+  .doc-titulo{font-size:15px;font-weight:700;color:#16a34a;letter-spacing:.03em}
+  .doc-num{font-family:'Courier New',monospace;font-size:11px;color:#64748b;margin-top:3px}
+  .datos-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:11.5px}
+  .datos-box b{color:#0f172a}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th{background:#16a34a;color:#fff;padding:9px 10px;text-align:left;font-size:10.5px;font-weight:600}
+  td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px}
+  .totales{margin-top:14px;margin-left:auto;width:260px}
+  .totales .fila{display:flex;justify-content:space-between;padding:5px 0;font-size:11.5px;color:#475569}
+  .totales .final{border-top:2px solid #16a34a;margin-top:4px;padding-top:8px;font-size:16px;font-weight:700;color:#16a34a}
+  .firma-area{margin-top:56px;display:flex;justify-content:space-between;gap:40px}
+  .firma-linea{flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:10px;color:#64748b;text-align:center}
+  .firma-img{max-height:60px;margin-bottom:4px}
+  .terminos{margin-top:26px;font-size:9.5px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px}
+  .app-credit{margin-top:8px;font-size:8.5px;color:#cbd5e1;text-align:center}
+  .estado-chip{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;color:#fff}
+`;
+
+function genPDFPres(p){
+  const filas=p.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+    <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+    <td style="text-align:right">${fmt(item.precio)}</td>
+    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
+  const totalMat=p.items.reduce((s,i)=>s+i.cant*i.precio,0);
+  const numero = "P-"+String(p.id||"").slice(-5).toUpperCase();
+  const html=`<html><head><meta charset="UTF-8"><title>Presupuesto ${numero}</title><style>${ESTILOS_PDF}</style></head><body>
+    ${membretePDF()}
+    <div class="doc-head">
+      <div><div class="doc-titulo">PRESUPUESTO DE OBRA</div><div class="doc-num">N° ${numero} &nbsp;·&nbsp; ${p.fecha}</div></div>
+    </div>
+    <div class="datos-box">
+      <b>Cliente:</b> ${p.cliente}${p.obra?` &nbsp;·&nbsp; <b>Obra:</b> ${p.obra}`:""}
+    </div>
+    <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+    <tbody>${filas}</tbody></table>
+    <div class="totales">
+      <div class="fila"><span>Materiales</span><span>${fmt(totalMat)}</span></div>
+      <div class="fila"><span>Mano de obra</span><span>${fmt(p.mo||0)}</span></div>
+      <div class="fila final"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
+    </div>
+    <div class="terminos">Presupuesto elaborado conforme a normativa AEA 90364 e IRAM vigente. Precios sujetos a variación según cotización de materiales. Validez: 15 días desde la fecha de emisión.</div>
+    ${creditoAppPDF()}
+  </body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+function exportarPresPDF(){
+  if(!presItemsActual.length){toast("Sin ítems","red");return;}
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+  genPDFPres({cliente:val("pres-cliente"),obra:val("pres-obra"),items:presItemsActual,mo,total:totalMat+mo,fecha:hoy()});
+}
+function exportarPresPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPres(p); }
+
+// FACTURAS
+function numeroFacturaSiguiente(){
+  const n=(DB.facturas.length||0)+1;
+  return "F-"+String(n).padStart(4,"0");
+}
+function guardarFactura(){
+  if(limiteAlcanzado("facturas")){ bloquearPorLimite("facturas","facturas"); return; }
+  const cliente=val("fac-cliente"), monto=parseFloat(val("fac-monto"))||0;
+  if(!cliente){toast("Cliente obligatorio","red");return;}
+  if(!monto){toast("Ingresá el monto","red");return;}
+  const f={id:uid(),numero:numeroFacturaSiguiente(),cliente,concepto:val("fac-concepto"),
+    items:[],total:monto,metodo:val("fac-metodo"),estado:val("fac-estado"),
+    fecha:hoy(),fechaPago:val("fac-estado")==="Pagada"?hoy():null};
+  DB.facturas.push(f); guardarDB("facturas");
+  ["fac-concepto","fac-monto"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarFacturas(); actualizarDashboard(); toast(`Factura ${f.numero} generada`);
+}
+function generarFacturaDesdePresupuesto(id){
+  if(limiteAlcanzado("facturas")){ bloquearPorLimite("facturas","facturas"); return; }
+  const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
+  const f={id:uid(),numero:numeroFacturaSiguiente(),cliente:p.cliente,concepto:p.obra||"",
+    items:p.items,total:p.total,metodo:"Transferencia",estado:"Pendiente",
+    fecha:hoy(),fechaPago:null,presupuestoId:p.id,mo:p.mo||0};
+  DB.facturas.push(f); guardarDB("facturas");
+  ir("facturas"); toast(`Factura ${f.numero} generada desde el presupuesto`);
+}
+function marcarFacturaPagada(id){
+  const f=DB.facturas.find(x=>x.id===id); if(!f) return;
+  f.estado="Pagada"; f.fechaPago=hoy();
+  guardarDB("facturas"); mostrarFacturas(); actualizarDashboard(); toast("Factura marcada como pagada");
+}
+function eliminarFactura(id){
+  if(!confirm("Eliminar factura?")) return;
+  DB.facturas=DB.facturas.filter(f=>f.id!==id);
+  guardarDB("facturas"); mostrarFacturas(); actualizarDashboard();
+}
+function mostrarFacturas(){
+  const cnt=get("fac-count"); if(cnt) cnt.textContent=textoContadorPlan("facturas");
+  const cont=get("lista-facturas"); if(!cont) return;
+  const sel=get("fac-cliente");
+  if(sel && sel.options.length<=1) sincronizarSelectClientes();
+  if(!DB.facturas.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin facturas.</p>`;return;}
+  const badgeEstado=e=>e==="Pagada"?'<span class="badge badge-green">PAGADA</span>':'<span class="badge badge-yellow">PENDIENTE</span>';
+  cont.innerHTML=[...DB.facturas].reverse().map(f=>`<div class="item"><div class="item-row">
+    <div><b>${escapeHtml(f.numero)}</b> — ${escapeHtml(f.cliente)} ${badgeEstado(f.estado)}<br>
+    <small>${escapeHtml(f.concepto)||"—"} | 📅 ${f.fecha} | <b style="color:var(--verde)">${fmt(f.total)}</b> (${escapeHtml(f.metodo)})</small>
+    ${f.fechaPago?`<br><small style="color:var(--muted2)">💰 Pagada el ${f.fechaPago}</small>`:""}
+    </div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm" onclick="exportarFacturaPDF('${f.id}')">📄</button>
+      ${f.estado!=="Pagada"?`<button class="btn btn-verde btn-sm" onclick="marcarFacturaPagada('${f.id}')">✔ Pagada</button>`:""}
+      <button class="btn btn-red btn-sm" onclick="eliminarFactura('${f.id}')">✕</button>
+    </div></div></div>`).join("");
+}
+function exportarFacturaPDF(id){
+  const f=DB.facturas.find(x=>x.id===id); if(!f) return;
+  const filasItems=f.items&&f.items.length ? f.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+    <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+    <td style="text-align:right">${fmt(item.precio)}</td>
+    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("") : "";
+  const colorEstado = f.estado==="Pagada" ? "#16a34a" : "#f59e0b";
+  const html=`<html><head><meta charset="UTF-8"><title>Factura ${f.numero}</title><style>${ESTILOS_PDF}</style></head><body>
+    ${membretePDF()}
+    <div class="doc-head">
+      <div><div class="doc-titulo">FACTURA / RECIBO</div><div class="doc-num">N° ${f.numero} &nbsp;·&nbsp; ${f.fecha}</div></div>
+      <span class="estado-chip" style="background:${colorEstado}">${f.estado.toUpperCase()}</span>
+    </div>
+    <div class="datos-box">
+      <b>Cliente:</b> ${f.cliente}${f.concepto?` &nbsp;·&nbsp; <b>Concepto:</b> ${f.concepto}`:""}
+    </div>
+    ${filasItems?`<table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+    <tbody>${filasItems}</tbody></table>
+    <div class="totales">
+      <div class="fila"><span>Materiales</span><span>${fmt(f.items.reduce((s,i)=>s+i.cant*i.precio,0))}</span></div>
+      ${f.mo?`<div class="fila"><span>Mano de obra</span><span>${fmt(f.mo)}</span></div>`:""}
+      <div class="fila final"><span>TOTAL</span><span>${fmt(f.total)}</span></div>
+    </div>`:`<div class="totales"><div class="fila final"><span>TOTAL</span><span>${fmt(f.total)}</span></div></div>`}
+    <div class="datos-box" style="margin-top:16px"><b>Método de pago:</b> ${f.metodo}${f.fechaPago?` &nbsp;·&nbsp; <b>Pagado el:</b> ${f.fechaPago}`:""}</div>
+    <div class="firma-area">
+      <div class="firma-linea">Firma del profesional</div>
+      <div class="firma-linea">Firma de conformidad del cliente</div>
+    </div>
+    <div class="terminos">Comprobante de cobro emitido conforme a la actividad declarada. Conservar como constancia de pago.</div>
+    ${creditoAppPDF()}
+  </body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+function exportarPresCSV(){
+  if(!presItemsActual.length){toast("Sin ítems","red");return;}
+  let csv="Descripcion,Cantidad,Precio,Subtotal\n";
+  presItemsActual.forEach(i=>{csv+=`"${i.nombre}",${i.cant},${i.precio},${i.cant*i.precio}\n`;});
+  descargarCSV(csv,`Presupuesto_Franz_${hoy().replace(/\//g,"-")}.csv`);
+}
+function exportarPresWA(){
+  const lista=presItemsActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+  const total=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0)+(parseFloat(val("pres-mo"))||0);
+  window.open(`https://wa.me/?text=${encodeURIComponent(`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${val("pres-cliente")}\nFecha: ${hoy()}\n\n${lista}\n\nMO: ${fmt(parseFloat(val("pres-mo"))||0)}\n*TOTAL: ${fmt(total)}*`)}`, "_blank");
+}
+function exportarPresWAById(id){
+  const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
+  const lista=p.items.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+  window.open(`https://wa.me/?text=${encodeURIComponent(`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${p.cliente}\nFecha: ${p.fecha}\n\n${lista}\n\nMO: ${fmt(p.mo||0)}\n*TOTAL: ${fmt(p.total)}*`)}`, "_blank");
+}
+
+// RELEVAMIENTO
+async function guardarRelevamiento(){
+  const cliente=val("rel-cliente");
+  if(!cliente){toast("Cliente obligatorio","red");return;}
+  const id=uid();
+  DB.relevamientos.push({id,cliente,dir:val("rel-dir"),tipo:val("rel-tipo"),
+    gabinete:val("rel-gabinete"),diferencial:val("rel-diferencial"),
+    termicas:val("rel-termicas"),pat:val("rel-pat"),
+    aea:get("rel-aea")?.checked||false,interv:get("rel-interv")?.checked||false,
+    obs:val("rel-obs"),fecha:hoy()});
+  guardarDB("relevamientos");
+  await confirmarFotosPendientes("rel","relevamiento",id,"hallazgo");
+  limpiarFotosPendientes("rel","rel-fotos-preview");
+  mostrarRelevamientos(); toast("Relevamiento guardado");
+}
+function generarDiagnostico(){
+  let txt="";
+  if(val("rel-diferencial")==="No posee") txt+=`• <b>⚠ CRÍTICO:</b> Ausencia de protección diferencial. Riesgo de electrocución.<br>`;
+  if(val("rel-pat")==="No posee") txt+=`• <b>⚠ CRÍTICO:</b> Ausencia de PAT. Incumplimiento AEA 90364.<br>`;
+  if(val("rel-gabinete")==="Malo") txt+=`• Gabinete deficiente. Se recomienda reemplazo urgente.<br>`;
+  if(val("rel-termicas")==="Malo") txt+=`• Térmicas deficientes. Requieren evaluación.<br>`;
+  if(!get("rel-aea")?.checked) txt+=`• No cumple criterios AEA 90364 verificados.<br>`;
+  if(get("rel-interv")?.checked) txt+=`• Intervenciones previas por terceros detectadas.<br>`;
+  if(!txt) txt="✅ No se detectaron anomalías relevantes.";
+  const el=get("rel-diagnostico"); el.innerHTML=txt; el.style.display="block";
+  el.scrollIntoView({behavior:"smooth"});
+}
+async function eliminarRelevamiento(id){
+  if(!confirm("Eliminar?")) return;
+  DB.relevamientos=DB.relevamientos.filter(r=>r.id!==id);
+  guardarDB("relevamientos"); mostrarRelevamientos();
+  const fotos=await obtenerFotosDB("relevamiento",id);
+  for(const f of fotos) await eliminarFotoDB(f.id);
+}
+function mostrarRelevamientos(){
+  const cnt=get("rel-count"); if(cnt) cnt.textContent=DB.relevamientos.length;
+  const cont=get("lista-relevamientos"); if(!cont) return;
+  if(!DB.relevamientos.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin relevamientos.</p>`;return;}
+  cont.innerHTML=DB.relevamientos.map(r=>`<div class="item"><div class="item-row">
+    <div><b>${escapeHtml(r.cliente)}</b> <span class="badge badge-blue">${escapeHtml(r.tipo)}</span><br>
+    <small>📍 ${escapeHtml(r.dir)||"—"} | 📅 ${r.fecha}</small><br>
+    <small>Diferencial: ${escapeHtml(r.diferencial)} | PAT: ${escapeHtml(r.pat)} | Gabinete: ${escapeHtml(r.gabinete)}</small><br>
+    <small>AEA: ${r.aea?'<span class="badge badge-green">SI</span>':'<span class="badge badge-red">NO</span>'}
+    Intervenida: ${r.interv?'<span class="badge badge-yellow">SI</span>':'<span class="badge badge-green">NO</span>'}</small>
+    </div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm btn-foto-galeria" id="rel-fotobtn-${r.id}" onclick="verGaleria('relevamiento','${r.id}','Fotos — ${escapeHtml(r.cliente)}')">📷…</button>
+      <button class="btn btn-red btn-sm" onclick="eliminarRelevamiento('${r.id}')">✕</button>
+    </div>
+    </div></div>`).join("");
+  pintarBotonesFotos("relevamiento", DB.relevamientos.map(r=>r.id), "rel-fotobtn-");
+}
+
+// CALCULADORAS AEA
+function tabCalc(el,id){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on")); el.classList.add("on");
+  ["calc-canio","calc-tension","calc-cable","calc-motor","calc-pat","calc-materiales"].forEach(c=>{
+    const e=get(c); if(e) e.style.display=c===id?"block":"none";
+  });
+}
+const tablaAEA={"1.5":{20:9,25:15,32:26,40:37,50:58},"2.5":{20:5,25:9,32:16,40:23,50:36},
+  "4":{20:4,25:6,32:11,40:16,50:25},"6":{20:2,25:4,32:8,40:11,50:18},"10":{20:1,25:2,32:4,40:6,50:9}};
+function calcAEA(){
+  const diam=parseInt(val("aea-diam")), secc=val("aea-secc"), cant=parseInt(val("aea-cant"))||0;
+  const el=get("aea-resultado");
+  if(!cant){el.innerHTML="⚠ Ingresá la cantidad de conductores";el.style.display="block";return;}
+  const tabla=tablaAEA[secc]; if(!tabla){el.innerHTML="⚠ Sección no disponible";el.style.display="block";return;}
+  const max=tabla[diam];
+  if(cant<=max){
+    el.innerHTML=`✅ <b>Canalización correcta</b><br>Conductores: ${cant} de ${max} máximo | Ocupación: ${Math.round(cant/max*100)}%`;
+  } else {
+    const rec=Object.entries(tabla).find(([d,m])=>cant<=m&&parseInt(d)>diam);
+    el.innerHTML=`❌ <b>Exceso de ocupación</b><br>Conductores: ${cant} — Máximo: ${max}<br>${rec?`✅ Caño recomendado: <b>${rec[0]}mm</b>`:"⚠ Usar bandeja portacables"}`;
+  }
+  el.style.display="block";
+}
+function calcCaidaTension(){
+  const I=parseFloat(val("ct-corriente"))||0, L=parseFloat(val("ct-longitud"))||0;
+  const S=parseFloat(val("ct-secc"))||2.5, mono=val("ct-sistema")==="mono";
+  const Vn=mono?220:380, k=mono?2:1.732, dV=(k*0.0175*L*I)/S, pct=(dV/Vn)*100;
+  const el=get("ct-resultado");
+  if(!I||!L){el.innerHTML="⚠ Ingresá corriente y longitud";el.style.display="block";return;}
+  el.innerHTML=`${pct<=3?"✅":"❌"} <b>Caída: ${dV.toFixed(2)}V (${pct.toFixed(2)}%)</b><br>Máximo AEA 3% = ${(Vn*0.03).toFixed(1)}V<br>${pct<=3?"Conductor apto.":'<span style="color:var(--red)">Supera límite. Aumentá la sección.</span>'}`;
+  el.style.display="block";
+}
+function calcSeccionCable(){
+  const P=parseFloat(val("sc-pot"))||0, V=parseFloat(val("sc-volt"))||220;
+  const fp=parseFloat(val("sc-fp"))||0.9, L=parseFloat(val("sc-long"))||0;
+  const mono=V===220, I=mono?P/(V*fp):P/(V*fp*1.732);
+  const Smin=(mono?2:1.732)*0.0175*L*I/(V*0.03);
+  const secciones=[1.5,2.5,4,6,10,16,25,35,50];
+  const rec=secciones.find(s=>s>=Smin)||50;
+  const Iadm={1.5:15,2.5:20,4:26,6:35,10:50,16:65,25:85,35:105,50:130};
+  const el=get("sc-resultado");
+  if(!P||!L){el.innerHTML="⚠ Ingresá potencia y longitud";el.style.display="block";return;}
+  el.innerHTML=`⚡ Corriente: <b>${I.toFixed(2)}A</b><br>Sección mínima: ${Smin.toFixed(2)}mm²<br>✅ <b>Sección recomendada: ${rec}mm²</b> (Iadm: ${Iadm[rec]}A)`;
+  el.style.display="block";
+}
+function calcMotor(){
+  const potInput=parseFloat(val("mo-pot"))||0, unidad=val("mo-unidad");
+  const V=parseFloat(val("mo-volt"))||380, eff=parseFloat(val("mo-eff"))||0.85, fp=parseFloat(val("mo-fp"))||0.85;
+  const kW=unidad==="hp"?potInput*0.746:potInput, mono=V===220;
+  const In=mono?kW*1000/(V*fp*eff):kW*1000/(V*fp*eff*1.732);
+  const el=get("mo-resultado");
+  if(!potInput){el.innerHTML="⚠ Ingresá la potencia";el.style.display="block";return;}
+  el.innerHTML=`⚡ Potencia: <b>${kW.toFixed(2)}kW</b><br>Corriente nominal: <b>${In.toFixed(2)}A</b><br>Térmica: <b>${(In*1.25).toFixed(2)}A</b> | Contactor: <b>${(In*1.15).toFixed(2)}A</b>`;
+  el.style.display="block";
+}
+function calcPAT(){
+  const rho=parseFloat(val("pat-suelo"))||100, L=parseFloat(val("pat-long"))||1.5, d=parseFloat(val("pat-diam"))||14.3;
+  const R=(rho/(2*Math.PI*L))*(Math.log(4*L/(d/1000))-1);
+  const el=get("pat-resultado");
+  el.innerHTML=`🌎 <b>Resistencia calculada: ${R.toFixed(2)}Ω</b><br>AEA máximo: 10Ω<br>${R<=10?"✅ Dentro del límite normativo":'<span style="color:var(--red)">❌ Supera el límite. Agregar más jabalinas en paralelo.</span>'}`;
+  el.style.display="block";
+}
+function calcMateriales(){
+  const L=parseFloat(val("mt-long"))||0, bocas=parseInt(val("mt-bocas"))||0;
+  const cond=parseInt(val("mt-cond"))||3, diam=val("mt-diam"), tendido=val("mt-tendido");
+  const el=get("mt-resultado");
+  if(!L||!bocas){el.innerHTML="⚠ Ingresá longitud y cantidad de bocas";el.style.display="block";return;}
+
+  const canioConDesperdicio=L*1.1;
+  const barras3m=Math.ceil(canioConDesperdicio/3);
+  const cableConDesperdicio=Math.ceil(L*1.15);
+  const metrosCablePorConductor=cableConDesperdicio;
+  const metrosCableTotal=metrosCablePorConductor*cond;
+  const curvas=Math.max(1,Math.ceil(L/3));
+  const conectores=Math.max(2,Math.ceil(L/3)+bocas);
+  const cajas=bocas;
+  const wagos=bocas*2;
+  const abrazaderas=tendido==="vista"?Math.ceil(L/0.5):0;
+  const tacos=tendido==="vista"?abrazaderas*2:0;
+
+  el.innerHTML=`
+    <b>📦 Materiales estimados para este circuito</b>
+    <table style="width:100%;margin-top:8px;font-size:.8rem;border-collapse:collapse">
+      <tr><td style="padding:4px 0">Caño PVC ${diam}mm</td><td style="text-align:right"><b>${barras3m} barra(s) de 3m</b> (${canioConDesperdicio.toFixed(1)}m netos)</td></tr>
+      <tr><td style="padding:4px 0">Cable unipolar (por conductor)</td><td style="text-align:right"><b>${metrosCablePorConductor}m</b> × ${cond} conductores</td></tr>
+      <tr><td style="padding:4px 0">Cable unipolar — total a comprar</td><td style="text-align:right"><b>${metrosCableTotal}m</b></td></tr>
+      <tr><td style="padding:4px 0">Cajas (rectangular/octogonal)</td><td style="text-align:right"><b>${cajas}</b></td></tr>
+      <tr><td style="padding:4px 0">Curvas/codos 90°</td><td style="text-align:right"><b>${curvas}</b></td></tr>
+      <tr><td style="padding:4px 0">Conectores/uniones PVC</td><td style="text-align:right"><b>${conectores}</b></td></tr>
+      <tr><td style="padding:4px 0">Wago / conectores rápidos</td><td style="text-align:right"><b>${wagos}</b></td></tr>
+      ${tendido==="vista"?`<tr><td style="padding:4px 0">Abrazaderas (tendido a la vista)</td><td style="text-align:right"><b>${abrazaderas}</b></td></tr>
+      <tr><td style="padding:4px 0">Tacos + tornillos</td><td style="text-align:right"><b>${tacos}</b></td></tr>`:""}
+    </table>
+    <div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="pasarCalculoACompras()">🛒 Pasar a lista de compras</button></div>`;
+  el.style.display="block";
+  window._ultimoCalcMateriales={barras3m,diam,metrosCableTotal,cond,cajas,curvas,conectores,wagos,abrazaderas,tacos,tendido};
+}
+function pasarCalculoACompras(){
+  const c=window._ultimoCalcMateriales; if(!c){toast("Calculá primero","red");return;}
+  const items=[
+    {nombre:`Caño PVC rígido ${c.diam}mm (barra 3m)`,cant:c.barras3m},
+    {nombre:`Cable unipolar (a definir sección/color)`,cant:c.metrosCableTotal},
+    {nombre:`Caja rectangular/octogonal PVC embutir`,cant:c.cajas},
+    {nombre:`Curva 90° PVC ${c.diam}mm`,cant:c.curvas},
+    {nombre:`Conector/unión PVC ${c.diam}mm`,cant:c.conectores},
+    {nombre:`Wago / conector rápido`,cant:c.wagos},
+  ];
+  if(c.tendido==="vista"){
+    items.push({nombre:`Abrazadera ${c.diam}mm`,cant:c.abrazaderas});
+    items.push({nombre:`Taco + tornillo`,cant:c.tacos});
+  }
+  items.forEach(i=>{ if(i.cant>0) DB.compras.push({id:uid(),nombre:i.nombre,cant:i.cant,prov:"",fecha:hoy()}); });
+  guardarDB("compras"); ir("compras"); toast("Materiales agregados a compras");
+}
+
+// OMISIONES
+const CHECKLISTS={
+  residencial:["Diferencial 30mA instalado y operativo","PAT (jabalina+caja inspección) presente","Protecciones bipolares en todos los circuitos","Separación iluminación/tomas/fuerza","Cañerías AEA (20/25mm, curvas, conectores)","Cajas rectangulares/octogonales en cada boca","Conductores con colores normalizados AEA","Tablero con gabinete adecuado","Conexión a tierra de masas metálicas","Circuito cocina independiente 20A"],
+  comercial:["Diferencial 30mA por circuito","PAT según AEA 90364","Protecciones bipolares","Tablero con DPS","Iluminación de emergencia","Extintor señalizado","Conductores identificados","Medición de tierra documentada","Circuito fuerza separado","Borneras rotuladas en tablero"],
+  industrial:["Diferencial tipo A para variadores","PAT con medición protocolizada","Canalización metálica o bandeja","Guardamotor por cada motor","Pulsador seta emergencia accesible","Señalización de tablero","Cable apantallado para señales","Cierre de tablero con llave","Protección de neutro","Conductor PE identificado"],
+  frigorifico:["Contactor apropiado para compresor","Relé térmico calibrado","Termostato operativo","Timer de descongelamiento","Cañería flexible en conexión compresor","IP67 en tomas de cámara","Capacitor de marcha correcto","Iluminación IP65 interior","Diferencial tipo A","PAT de masas metálicas"],
+  pat:["Jabalina copperweld instalada","Caja de inspección accesible","Grapa de conexión apretada","Cable verde/amarillo correcto","Barra equipotencial presente","Medición < 10Ω","Gel conductor aplicado","Protocolo SRT 900/15 realizado"],
+  tablero:["Gabinete con IP adecuado","Diferencial general instalado","Térmica general calibrada","Térmicas de circuito instaladas","Peine de distribución correcto","Barra de neutros conectada","Barra de tierra conectada","Cables rotulados","DPS instalado","Tapa ciega en módulos vacíos"],
+};
+let checkActual={};
+function cargarChecklist(tipo){
+  const cont=get("om-checklist"), btns=get("om-btns");
+  if(!tipo||!CHECKLISTS[tipo]){cont.innerHTML="";if(btns)btns.style.display="none";return;}
+  checkActual={};
+  cont.innerHTML=CHECKLISTS[tipo].map((item,i)=>`<div class="check-row">
+    <input type="checkbox" id="chk-${i}" onchange="checkActual['${item.replace(/'/g,"\\'")}']= this.checked">
+    <label for="chk-${i}" style="text-transform:none;font-size:.84rem">${item}</label>
+    </div>`).join("");
+  if(btns) btns.style.display="flex";
+}
+function guardarOmision(){
+  const tipo=val("om-tipo"); if(!tipo){toast("Seleccioná un tipo","red");return;}
+  const checklist=CHECKLISTS[tipo]||[];
+  const resultados=checklist.map(item=>({item,ok:!!checkActual[item]}));
+  const ok=resultados.filter(r=>r.ok).length;
+  DB.omisiones.push({id:uid(),tipo,obra:val("om-obra"),resultados,ok,total:checklist.length,fecha:hoy()});
+  guardarDB("omisiones"); mostrarOmisiones(); toast("Verificación guardada");
+}
+function exportarOmisionPDF(){
+  const tipo=val("om-tipo"); if(!tipo){toast("Completá el checklist","red");return;}
+  const checklist=CHECKLISTS[tipo]||[];
+  const ok=Object.values(checkActual).filter(v=>v).length;
+  const filas=checklist.map(item=>`<tr><td>${item}</td><td style="text-align:center;color:${checkActual[item]?"#16a34a":"#ef4444"}">${checkActual[item]?"✅ Conforme":"❌ No conforme"}</td></tr>`).join("");
+  const html=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:30px;font-size:12px}
+    h1{color:#16a34a}table{width:100%;border-collapse:collapse;margin-top:10px}
+    th{background:#16a34a;color:#fff;padding:8px}td{padding:7px;border-bottom:1px solid #ddd}</style></head><body>
+    <h1>⚡ FRANZ ELECTRICIDAD — Verificación</h1>
+    <p>Tipo: <b>${tipo}</b> | Obra: <b>${val("om-obra")||"—"}</b> | Fecha: <b>${hoy()}</b></p>
+    <p>Resultado: <b>${ok}/${checklist.length} ítems conformes</b></p>
+    <table><thead><tr><th>Ítem</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>
+    </body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close(); w.print();
+}
+function eliminarOmision(id){
+  if(!confirm("Eliminar?")) return;
+  DB.omisiones=DB.omisiones.filter(o=>o.id!==id);
+  guardarDB("omisiones"); mostrarOmisiones();
+}
+function mostrarOmisiones(){
+  const cnt=get("om-count"); if(cnt) cnt.textContent=DB.omisiones.length;
+  const cont=get("lista-omisiones"); if(!cont) return;
+  if(!DB.omisiones.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin verificaciones.</p>`;return;}
+  cont.innerHTML=DB.omisiones.map(o=>`<div class="item"><div class="item-row">
+    <div><b>${o.tipo}</b>${o.obra?" — "+o.obra:""}<br>
+    <small>📅 ${o.fecha} | ${o.ok}/${o.total} conformes
+    <span class="badge ${o.ok===o.total?"badge-green":o.ok>o.total/2?"badge-yellow":"badge-red"}">${Math.round(o.ok/o.total*100)}%</span></small></div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="eliminarOmision('${o.id}')">✕</button></div>
+    </div></div>`).join("");
+}
+
+// COMPRAS
+function agregarItemCompra(){
+  const nombre=val("comp-nombre");
+  if(!nombre){toast("Ingresá el material","red");return;}
+  DB.compras.push({id:uid(),nombre,cant:parseInt(val("comp-cant"))||1,prov:val("comp-prov"),fecha:hoy()});
+  guardarDB("compras");
+  ["comp-nombre","comp-cant","comp-prov"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  mostrarCompras(); toast("Ítem agregado");
+}
+function eliminarItemCompra(id){ DB.compras=DB.compras.filter(c=>c.id!==id); guardarDB("compras"); mostrarCompras(); }
+function limpiarCompras(){ if(!confirm("Limpiar lista?")) return; DB.compras=[]; guardarDB("compras"); mostrarCompras(); }
+function mostrarCompras(){
+  const cnt=get("comp-count"); if(cnt) cnt.textContent=DB.compras.length;
+  const cont=get("lista-compras"); if(!cont) return;
+  if(!DB.compras.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Lista vacía.</p>`;return;}
+  cont.innerHTML=DB.compras.map(c=>`<div class="item"><div class="item-row">
+    <div><b>${c.nombre}</b> <span class="badge badge-yellow">×${c.cant}</span>
+    ${c.prov?`<br><small>🚚 ${c.prov}</small>`:""}</div>
+    <button class="btn btn-red btn-sm" onclick="eliminarItemCompra('${c.id}')">✕</button>
+    </div></div>`).join("");
+}
+function exportarComprasPDF(){
+  if(!DB.compras.length){toast("Lista vacía","red");return;}
+  const filas=DB.compras.map((c,i)=>`<tr style="background:${i%2?"#f8f9fa":"white"}"><td>${c.nombre}</td><td style="text-align:center">${c.cant}</td><td>${c.prov||"—"}</td></tr>`).join("");
+  const html=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:30px;font-size:12px}h1{color:#16a34a}table{width:100%;border-collapse:collapse}th{background:#16a34a;color:#fff;padding:8px}td{padding:7px;border-bottom:1px solid #ddd}</style></head><body>
+    <h1>⚡ FRANZ ELECTRICIDAD — Lista de compras</h1><p>Fecha: ${hoy()} | ${DB.compras.length} ítems</p>
+    <table><thead><tr><th>Material</th><th>Cantidad</th><th>Proveedor</th></tr></thead><tbody>${filas}</tbody></table></body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close(); w.print();
+}
+function exportarComprasCSV(){
+  let csv="Material,Cantidad,Proveedor\n";
+  DB.compras.forEach(c=>{csv+=`"${c.nombre}",${c.cant},"${c.prov||""}"\n`;});
+  descargarCSV(csv,`Lista_Compras_Franz_${hoy().replace(/\//g,"-")}.csv`);
+}
+function exportarComprasWA(){
+  if(!DB.compras.length){toast("Lista vacía","red");return;}
+  const lista=DB.compras.map(c=>`• ${c.nombre} x${c.cant}${c.prov?" ("+c.prov+")":""}`).join("\n");
+  window.open(`https://wa.me/?text=${encodeURIComponent(`🛒 *LISTA DE COMPRAS — FRANZ ELECTRICIDAD*\nFecha: ${hoy()}\n\n${lista}`)}`, "_blank");
+}
+
+// HISTORIAL
+function mostrarHistorial(){ filtrarHistorial(""); }
+function filtrarHistorial(txt){
+  const tipo=val("hist-tipo"), cont=get("lista-historial"); if(!cont) return;
+  let items=[];
+  if(!tipo||tipo==="cliente") DB.clientes.forEach(c=>items.push({tipo:"cliente",titulo:c.nombre,sub:`Tel: ${c.tel||"—"}`,fecha:c.fecha,id:c.id}));
+  if(!tipo||tipo==="obra") DB.obras.forEach(o=>items.push({tipo:"obra",titulo:o.nombre,sub:`${o.cliente} · ${o.estado}`,fecha:o.fechaReg,id:o.id}));
+  if(!tipo||tipo==="presupuesto") DB.presupuestos.forEach(p=>items.push({tipo:"presupuesto",titulo:`Presupuesto ${p.cliente}`,sub:fmt(p.total),fecha:p.fecha,id:p.id}));
+  if(!tipo||tipo==="relevamiento") DB.relevamientos.forEach(r=>items.push({tipo:"relevamiento",titulo:r.cliente,sub:`${r.tipo} · PAT: ${r.pat}`,fecha:r.fecha,id:r.id}));
+  if(txt) items=items.filter(i=>i.titulo.toLowerCase().includes(txt.toLowerCase())||i.sub.toLowerCase().includes(txt.toLowerCase()));
+  items.sort((a,b)=>b.id.localeCompare(a.id));
+  if(!items.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin registros.</p>`;return;}
+  const colors={cliente:"badge-green",obra:"badge-cyan",presupuesto:"badge-yellow",relevamiento:"badge-blue"};
+  cont.innerHTML=items.map(i=>`<div class="item"><div class="item-row">
+    <div><b>${i.titulo}</b> <span class="badge ${colors[i.tipo]||"badge-cyan"}">${i.tipo}</span><br>
+    <small>${i.sub} | 📅 ${i.fecha}</small></div></div></div>`).join("");
+}
+
+// EXPORT
+function descargarCSV(csv,nombre){
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=nombre; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// INIT
+document.addEventListener("DOMContentLoaded",()=>{
+  if(typeof cargarCatalogoInicial==="function") cargarCatalogoInicial();
+  const tema=localStorage.getItem("franz-tema"); if(tema) cambiarTema(tema);
+  actualizarDashboard(); sincronizarSelectClientes(); iniciarPlantillas();
+  const fd=get("ob-fecha"); if(fd&&!fd.value) fd.value=new Date().toISOString().split("T")[0];
+});
