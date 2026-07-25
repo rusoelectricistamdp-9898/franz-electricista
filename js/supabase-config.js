@@ -5,7 +5,7 @@ const SUPABASE_URL = "https://cipzeluejrthpvhsegtp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WB-Vly2AnWbLoHWTEdJFsQ_X9DzNgiP"; // anon key pública
 
 // Email del administrador (solo vos)
-const ADMIN_EMAIL = "franzelectricidad@gmail.com"; // <-- cambiá por tu Gmail real
+const ADMIN_EMAIL = "rusoelectricista.mdp@gmail.com"; // <-- cambiá por tu Gmail real
 
 // Datos de contacto para pago por transferencia (alternativa a MercadoPago)
 const WHATSAPP_NUMERO = "5492234250866"; // tu WhatsApp con código de país y área
