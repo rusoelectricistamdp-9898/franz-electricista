@@ -1,5 +1,5 @@
 /* ============================================
-   FRANZ ELECTRICIDAD PRO — AUTH.JS
+   FRANZ ELECTRICISTA — AUTH.JS
    Login con Google via Supabase
 ============================================ */
 
@@ -54,6 +54,7 @@ async function loginConGoogle() {
 
 async function cerrarSesion() {
   if (typeof desuscribirRealtime === "function") desuscribirRealtime();
+  if (typeof desuscribirLicenciaRealtime === "function") desuscribirLicenciaRealtime();
   await sb.auth.signOut();
 }
 
@@ -174,6 +175,11 @@ function mostrarApp(modo) {
     });
   }
 
+  // Suscripción en tiempo real al ESTADO DE LA LICENCIA: si el admin activa
+  // Pro desde el panel (o el webhook de MercadoPago lo hace solo), esto lo
+  // refleja acá al instante, sin que el usuario tenga que cerrar sesión.
+  if (typeof suscribirLicenciaRealtime === "function") suscribirLicenciaRealtime();
+
   // Si volvemos del Checkout de MercadoPago, re-consultamos la licencia
   // (el webhook activa el plan en segundos, esto lo refleja en la UI sin recargar)
   const parametros = new URLSearchParams(window.location.search);
@@ -257,13 +263,19 @@ function aplicarModoPro(modo) {
     btn.style.cursor = "";
     btn.title = "";
   });
+
+  // Si veníamos de básico, sacamos el banner de upgrade y reactivamos botones
+  const banner = document.getElementById("banner-upgrade");
+  if (banner) banner.remove();
 }
 
 function mostrarBotonAdmin() {
   const nav = document.querySelector(".sb-nav");
   if (!nav) return;
+  if (nav.querySelector('[data-admin-btn]')) return; // no duplicar si ya existe
   const btnAdmin = document.createElement("button");
   btnAdmin.className = "menu-btn";
+  btnAdmin.setAttribute("data-admin-btn", "1");
   btnAdmin.style.cssText = "color:var(--cyan);border-left-color:var(--cyan);background:rgba(0,212,255,.06)";
   btnAdmin.innerHTML = `<span class="ico">🔑</span> Panel Admin`;
   btnAdmin.onclick = () => ir("admin");
@@ -420,7 +432,7 @@ function mostrarPantallaLogin() {
     <div style="text-align:center;max-width:380px;width:100%">
       <div style="width:90px;height:90px;border-radius:50%;border:3px solid var(--verde);
         box-shadow:0 0 30px rgba(34,197,94,.3);margin:0 auto 20px;overflow:hidden">
-        <img src="https://cipzeluejrthpvhsegtp.supabase.co/storage/v1/object/public/logos/logo-franz.png"
+        <img src="icons/icon-192.png"
           onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\\'font-size:2.5rem;line-height:90px\\'>⚡</div>'"
           style="width:100%;height:100%;object-fit:cover">
       </div>
