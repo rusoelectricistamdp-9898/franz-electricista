@@ -417,8 +417,18 @@ function renderComponentes(lista){
     <div><b>${c.nombre}</b> <span class="badge badge-blue">${c.cat}</span><br>
     <small>${c.marca||"—"} · ${c.modelo||""} · ${c.amp||""} · ${c.polos||""}</small>
     ${c.norma?`<br><small style="color:var(--muted2)">📋 ${c.norma}</small>`:""}</div>
-    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="eliminarComponente('${c.id}')">✕</button></div>
+    <div class="item-actions">
+      <button class="btn btn-outline btn-sm" onclick="agregarComponenteAPres('${c.id}')">📋</button>
+      <button class="btn btn-red btn-sm" onclick="eliminarComponente('${c.id}')">✕</button>
+    </div>
     </div></div>`).join("");
+}
+function agregarComponenteAPres(id){
+  const c=DB.componentes.find(x=>x.id===id); if(!c) return;
+  const cant=parseInt(prompt("Cantidad:"))||1;
+  const precio=parseFloat(prompt("Precio unitario ($):")||"0")||0;
+  presComponentesActual.push({nombre:c.nombre,cant,precio});
+  renderPresComponentes(); ir("presupuestos"); toast(c.nombre+" agregado al presupuesto");
 }
 
 // PLANTILLAS
@@ -509,6 +519,8 @@ function mostrarTableros(){
 
 // PRESUPUESTOS
 let presItemsActual=[];
+let presComponentesActual=[];
+let presAdicionalesActual=[];
 function agregarItemPres(){
   const nombre=val("pres-item-nombre");
   if(!nombre){toast("Ingresá el ítem","red");return;}
@@ -521,21 +533,65 @@ function agregarItemPres(){
 function quitarItemPres(i){ presItemsActual.splice(i,1); renderPresItems(); }
 function renderPresItems(){
   const cont=get("pres-items"); if(!cont) return;
-  if(!presItemsActual.length){cont.innerHTML=`<p style="color:var(--muted);font-size:.82rem;margin-top:8px">Sin ítems.</p>`;actualizarTotalPres();return;}
+  if(!presItemsActual.length){cont.innerHTML=`<p style="color:var(--muted);font-size:.82rem;margin-top:8px">Sin materiales.</p>`;actualizarTotalPres();return;}
   cont.innerHTML=presItemsActual.map((item,i)=>`<div class="item"><div class="item-row">
     <div><b>${item.nombre}</b><br><small>Cant: ${item.cant} | Precio: ${fmt(item.precio)} | <b style="color:var(--verde)">Sub: ${fmt(item.cant*item.precio)}</b></small></div>
     <div class="item-actions"><button class="btn btn-red btn-sm" onclick="quitarItemPres(${i})">✕</button></div>
     </div></div>`).join("");
   actualizarTotalPres();
 }
+
+function agregarComponentePres(){
+  const nombre=val("pres-comp-nombre");
+  if(!nombre){toast("Ingresá el componente","red");return;}
+  const cant=parseFloat(val("pres-comp-cant"))||1;
+  const precio=parseFloat(val("pres-comp-precio"))||0;
+  presComponentesActual.push({nombre,cant,precio});
+  ["pres-comp-nombre","pres-comp-cant","pres-comp-precio"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  renderPresComponentes();
+}
+function quitarComponentePres(i){ presComponentesActual.splice(i,1); renderPresComponentes(); }
+function renderPresComponentes(){
+  const cont=get("pres-componentes"); if(!cont) return;
+  if(!presComponentesActual.length){cont.innerHTML=`<p style="color:var(--muted);font-size:.82rem;margin-top:8px">Sin componentes.</p>`;actualizarTotalPres();return;}
+  cont.innerHTML=presComponentesActual.map((item,i)=>`<div class="item"><div class="item-row">
+    <div><b>${item.nombre}</b><br><small>Cant: ${item.cant} | Precio: ${fmt(item.precio)} | <b style="color:var(--verde)">Sub: ${fmt(item.cant*item.precio)}</b></small></div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="quitarComponentePres(${i})">✕</button></div>
+    </div></div>`).join("");
+  actualizarTotalPres();
+}
+
+function agregarAdicionalPres(){
+  const concepto=val("pres-adic-concepto");
+  if(!concepto){toast("Ingresá el concepto","red");return;}
+  const importe=parseFloat(val("pres-adic-importe"))||0;
+  presAdicionalesActual.push({concepto,importe});
+  ["pres-adic-concepto","pres-adic-importe"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  renderPresAdicionales();
+}
+function quitarAdicionalPres(i){ presAdicionalesActual.splice(i,1); renderPresAdicionales(); }
+function renderPresAdicionales(){
+  const cont=get("pres-adicionales"); if(!cont) return;
+  if(!presAdicionalesActual.length){cont.innerHTML=`<p style="color:var(--muted);font-size:.82rem;margin-top:8px">Sin adicionales.</p>`;actualizarTotalPres();return;}
+  cont.innerHTML=presAdicionalesActual.map((item,i)=>`<div class="item"><div class="item-row">
+    <div><b>${item.concepto}</b> — <b style="color:var(--verde)">${fmt(item.importe)}</b></div>
+    <div class="item-actions"><button class="btn btn-red btn-sm" onclick="quitarAdicionalPres(${i})">✕</button></div>
+    </div></div>`).join("");
+  actualizarTotalPres();
+}
+
 function actualizarTotalPres(){
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
-  const total=totalMat+mo;
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
+  const total=totalMat+totalComp+mo+totalAdic;
   const cont=get("pres-total"); if(!cont) return;
   cont.innerHTML=`<div class="total-box">
     <div><div class="lbl">Materiales</div><div class="val">${fmt(totalMat)}</div></div>
+    <div><div class="lbl">Componentes</div><div class="val">${fmt(totalComp)}</div></div>
     <div><div class="lbl">Mano de obra</div><div class="val">${fmt(mo)}</div></div>
+    <div><div class="lbl">Adicionales</div><div class="val">${fmt(totalAdic)}</div></div>
     <div><div class="lbl">TOTAL</div><div class="val">${fmt(total)}</div></div>
     </div>`;
 }
@@ -543,12 +599,21 @@ function guardarPresupuesto(){
   if(limiteAlcanzado("presupuestos")){ bloquearPorLimite("presupuestos","presupuestos"); return; }
   const cliente=val("pres-cliente");
   if(!cliente){toast("Seleccioná un cliente","red");return;}
-  if(!presItemsActual.length){toast("Agregá al menos un ítem","red");return;}
+  if(!presItemsActual.length && !presComponentesActual.length){toast("Agregá al menos un material o componente","red");return;}
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
-  DB.presupuestos.push({id:uid(),cliente,obra:val("pres-obra"),items:[...presItemsActual],mo,total:totalMat+mo,fecha:hoy()});
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
+  DB.presupuestos.push({
+    id:uid(),cliente,obra:val("pres-obra"),
+    items:[...presItemsActual],
+    componentes:[...presComponentesActual],
+    adicionales:[...presAdicionalesActual],
+    mo,total:totalMat+totalComp+mo+totalAdic,fecha:hoy()
+  });
   guardarDB("presupuestos");
-  presItemsActual=[]; renderPresItems();
+  presItemsActual=[]; presComponentesActual=[]; presAdicionalesActual=[];
+  renderPresItems(); renderPresComponentes(); renderPresAdicionales();
   const e=get("pres-mo"); if(e) e.value="";
   mostrarPresupuestos(); actualizarDashboard(); toast("Presupuesto guardado");
 }
@@ -627,12 +692,26 @@ const ESTILOS_PDF = `
 `;
 
 function genPDFPres(p){
-  const filas=p.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+  const componentes=p.componentes||[];
+  const adicionales=p.adicionales||[];
+  const filasMat=p.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
     <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
     <td style="text-align:right">${fmt(item.precio)}</td>
     <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
+  const filasComp=componentes.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+    <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+    <td style="text-align:right">${fmt(item.precio)}</td>
+    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
+  const filasAdic=adicionales.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+    <td colspan="3">${item.concepto}</td>
+    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.importe)}</td></tr>`).join("");
   const totalMat=p.items.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=componentes.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalAdic=adicionales.reduce((s,i)=>s+i.importe,0);
   const numero = "P-"+String(p.id||"").slice(-5).toUpperCase();
+  const seccion=(titulo,filas)=>filas?`<div class="doc-titulo" style="font-size:12px;margin:16px 0 6px">${titulo}</div>
+    <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+    <tbody>${filas}</tbody></table>`:"";
   const html=`<html><head><meta charset="UTF-8"><title>Presupuesto ${numero}</title><style>${ESTILOS_PDF}</style></head><body>
     ${membretePDF()}
     <div class="doc-head">
@@ -641,11 +720,14 @@ function genPDFPres(p){
     <div class="datos-box">
       <b>Cliente:</b> ${p.cliente}${p.obra?` &nbsp;·&nbsp; <b>Obra:</b> ${p.obra}`:""}
     </div>
-    <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
-    <tbody>${filas}</tbody></table>
+    ${seccion("1. MATERIALES", filasMat)}
+    ${seccion("2. COMPONENTES / PROTECCIONES", filasComp)}
+    ${seccion("4. ADICIONALES", filasAdic)}
     <div class="totales">
       <div class="fila"><span>Materiales</span><span>${fmt(totalMat)}</span></div>
+      <div class="fila"><span>Componentes</span><span>${fmt(totalComp)}</span></div>
       <div class="fila"><span>Mano de obra</span><span>${fmt(p.mo||0)}</span></div>
+      <div class="fila"><span>Adicionales</span><span>${fmt(totalAdic)}</span></div>
       <div class="fila final"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
     </div>
     <div class="terminos">Presupuesto elaborado conforme a normativa AEA 90364 e IRAM vigente. Precios sujetos a variación según cotización de materiales. Validez: 15 días desde la fecha de emisión.</div>
@@ -655,10 +737,16 @@ function genPDFPres(p){
   setTimeout(()=>w.print(), 300);
 }
 function exportarPresPDF(){
-  if(!presItemsActual.length){toast("Sin ítems","red");return;}
+  if(!presItemsActual.length && !presComponentesActual.length){toast("Sin ítems","red");return;}
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
-  genPDFPres({cliente:val("pres-cliente"),obra:val("pres-obra"),items:presItemsActual,mo,total:totalMat+mo,fecha:hoy()});
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
+  genPDFPres({
+    cliente:val("pres-cliente"),obra:val("pres-obra"),
+    items:presItemsActual,componentes:presComponentesActual,adicionales:presAdicionalesActual,
+    mo,total:totalMat+totalComp+mo+totalAdic,fecha:hoy()
+  });
 }
 function exportarPresPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPres(p); }
 
@@ -755,7 +843,7 @@ function exportarFacturaPDF(id){
 // EXPORTAR A EXCEL (.xlsx) — con membrete profesional
 // ══════════════════════════════════════
 async function exportarPresCSV(){
-  if(!presItemsActual.length){toast("Sin ítems","red");return;}
+  if(!presItemsActual.length && !presComponentesActual.length){toast("Sin ítems","red");return;}
   const wb=new ExcelJS.Workbook();
   const ws=wb.addWorksheet("Presupuesto");
   const e=datosEmpresaPDF();
@@ -785,37 +873,61 @@ async function exportarPresCSV(){
   ws.getCell('A5').value=`Cliente: ${cliente}${obra?"   ·   Obra: "+obra:""}`;
   ws.getCell('A5').font={size:10,color:{argb:'FF0F172A'}};
 
-  const head=ws.getRow(7);
-  head.values=["Descripción","Cantidad","Precio unit.","Subtotal"];
-  head.eachCell(c=>{
-    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF16A34A'}};
-    c.font={bold:true,color:{argb:'FFFFFFFF'}};
-    c.alignment={vertical:'middle'};
-  });
+  let r=7;
 
-  let r=8;
-  presItemsActual.forEach(item=>{
-    const row=ws.getRow(r);
-    row.values=[item.nombre,item.cant,item.precio,item.cant*item.precio];
-    row.getCell(3).numFmt='"$"#,##0';
-    row.getCell(4).numFmt='"$"#,##0';
-    row.eachCell(c=>{ c.border={bottom:{style:'thin',color:{argb:'FFE2E8F0'}}}; });
-    if(r%2===0) row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
+  function seccion(titulo, items, esAdicional){
+    ws.mergeCells(`A${r}:D${r}`);
+    ws.getCell(`A${r}`).value=titulo;
+    ws.getCell(`A${r}`).font={bold:true,size:11,color:{argb:'FF16A34A'}};
     r++;
-  });
+    const head=ws.getRow(r);
+    head.values=esAdicional?["Concepto","","","Importe"]:["Descripción","Cantidad","Precio unit.","Subtotal"];
+    head.eachCell(c=>{
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF16A34A'}};
+      c.font={bold:true,color:{argb:'FFFFFFFF'}};
+      c.alignment={vertical:'middle'};
+    });
+    r++;
+    items.forEach(item=>{
+      const row=ws.getRow(r);
+      if(esAdicional){
+        row.values=[item.concepto,"","",item.importe];
+        row.getCell(4).numFmt='"$"#,##0';
+      } else {
+        row.values=[item.nombre,item.cant,item.precio,item.cant*item.precio];
+        row.getCell(3).numFmt='"$"#,##0';
+        row.getCell(4).numFmt='"$"#,##0';
+      }
+      row.eachCell(c=>{ c.border={bottom:{style:'thin',color:{argb:'FFE2E8F0'}}}; });
+      if(r%2===0) row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
+      r++;
+    });
+    r++;
+  }
+
+  if(presItemsActual.length) seccion("1. MATERIALES", presItemsActual, false);
+  if(presComponentesActual.length) seccion("2. COMPONENTES / PROTECCIONES", presComponentesActual, false);
+  if(presAdicionalesActual.length) seccion("4. ADICIONALES", presAdicionalesActual, true);
 
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
 
-  r++;
   ws.getCell(`C${r}`).value="Materiales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
   ws.getCell(`D${r}`).value=totalMat; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  r++;
+  ws.getCell(`C${r}`).value="Componentes"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+  ws.getCell(`D${r}`).value=totalComp; ws.getCell(`D${r}`).numFmt='"$"#,##0';
   r++;
   ws.getCell(`C${r}`).value="Mano de obra"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
   ws.getCell(`D${r}`).value=mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
   r++;
+  ws.getCell(`C${r}`).value="Adicionales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+  ws.getCell(`D${r}`).value=totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  r++;
   ws.getCell(`C${r}`).value="TOTAL"; ws.getCell(`C${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
-  ws.getCell(`D${r}`).value=totalMat+mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  ws.getCell(`D${r}`).value=totalMat+totalComp+mo+totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
   ws.getCell(`D${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
   ws.getCell(`C${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
   ws.getCell(`D${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
@@ -837,13 +949,32 @@ async function exportarPresCSV(){
 }
 function exportarPresWA(){
   const lista=presItemsActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  const total=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0)+(parseFloat(val("pres-mo"))||0);
-  window.open(`https://wa.me/?text=${encodeURIComponent(`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${val("pres-cliente")}\nFecha: ${hoy()}\n\n${lista}\n\nMO: ${fmt(parseFloat(val("pres-mo"))||0)}\n*TOTAL: ${fmt(total)}*`)}`, "_blank");
+  const listaComp=presComponentesActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+  const listaAdic=presAdicionalesActual.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
+  const total=totalMat+totalComp+mo+totalAdic;
+  let msg=`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${val("pres-cliente")}\nFecha: ${hoy()}\n\n`;
+  if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
+  if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
+  if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
+  msg+=`MO: ${fmt(mo)}\n*TOTAL: ${fmt(total)}*`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 function exportarPresWAById(id){
   const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
+  const componentes=p.componentes||[], adicionales=p.adicionales||[];
   const lista=p.items.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  window.open(`https://wa.me/?text=${encodeURIComponent(`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${p.cliente}\nFecha: ${p.fecha}\n\n${lista}\n\nMO: ${fmt(p.mo||0)}\n*TOTAL: ${fmt(p.total)}*`)}`, "_blank");
+  const listaComp=componentes.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+  const listaAdic=adicionales.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
+  let msg=`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${p.cliente}\nFecha: ${p.fecha}\n\n`;
+  if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
+  if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
+  if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
+  msg+=`MO: ${fmt(p.mo||0)}\n*TOTAL: ${fmt(p.total)}*`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 // RELEVAMIENTO
