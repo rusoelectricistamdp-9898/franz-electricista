@@ -109,7 +109,6 @@ function bloquearPorLimite(tabla, etiqueta){
   toast(`Llegaste al límite de ${LIMITE_GRATIS} ${etiqueta} del plan gratis`,"yellow");
   if(typeof mostrarModalUpgrade==="function") mostrarModalUpgrade();
 }
-// Pinta un badge "2/3" (gratis) o solo el total (pro) al lado del contador de una sección
 function textoContadorPlan(tabla){
   const n = DB[tabla].length;
   if(esPro()) return String(n);
@@ -219,7 +218,6 @@ function renderObras(lista){
   pintarBotonesFotos("obra", lista.map(o=>o.id), "ob-fotobtn-");
 }
 
-// ===== FINALIZAR OBRA: materiales usados/modificaciones + fotos de comprobante =====
 function abrirFinalizarObra(id){
   const o=DB.obras.find(x=>x.id===id); if(!o) return;
   limpiarFotosPendientes("fin","fin-fotos-preview");
@@ -579,7 +577,7 @@ function mostrarPresupuestos(){
 function datosEmpresaPDF(){
   const ed = (typeof licenciaActual!=="undefined" && licenciaActual?.empresa_data) || {};
   return {
-    nombre: ed.nombre || licenciaActual?.empresa || "Electricista Matriculado",
+    nombre: ed.nombre || licenciaActual?.empresa || licenciaActual?.nombre || "Servicio Eléctrico Profesional",
     tel: ed.tel || "", dir: ed.dir || "",
     email: ed.email || (typeof usuarioActual!=="undefined" && usuarioActual?.email) || "",
     cuit: ed.cuit || "", web: ed.web || "",
@@ -752,11 +750,90 @@ function exportarFacturaPDF(id){
   const w=window.open("","_blank"); w.document.write(html); w.document.close();
   setTimeout(()=>w.print(), 300);
 }
-function exportarPresCSV(){
+
+// ══════════════════════════════════════
+// EXPORTAR A EXCEL (.xlsx) — con membrete profesional
+// ══════════════════════════════════════
+async function exportarPresCSV(){
   if(!presItemsActual.length){toast("Sin ítems","red");return;}
-  let csv="Descripcion,Cantidad,Precio,Subtotal\n";
-  presItemsActual.forEach(i=>{csv+=`"${i.nombre}",${i.cant},${i.precio},${i.cant*i.precio}\n`;});
-  descargarCSV(csv,`Presupuesto_Franz_${hoy().replace(/\//g,"-")}.csv`);
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet("Presupuesto");
+  const e=datosEmpresaPDF();
+  ws.columns=[{width:44},{width:10},{width:16},{width:16}];
+
+  ws.mergeCells('A1:D1');
+  ws.getCell('A1').value=e.nombre;
+  ws.getCell('A1').font={bold:true,size:16,color:{argb:'FF0F172A'}};
+
+  const contacto=[e.tel&&`Tel: ${e.tel}`,e.email&&`Email: ${e.email}`,e.dir&&`Dir: ${e.dir}`].filter(Boolean);
+  if(contacto.length){
+    ws.mergeCells('A2:D2');
+    ws.getCell('A2').value=contacto.join("   ·   ");
+    ws.getCell('A2').font={size:9,color:{argb:'FF64748B'}};
+  }
+
+  ws.mergeCells('A4:B4');
+  ws.getCell('A4').value="PRESUPUESTO DE OBRA";
+  ws.getCell('A4').font={bold:true,size:13,color:{argb:'FF16A34A'}};
+  ws.getCell('C4').value=hoy();
+  ws.mergeCells('C4:D4');
+  ws.getCell('C4').alignment={horizontal:'right'};
+  ws.getCell('C4').font={size:10,color:{argb:'FF64748B'}};
+
+  ws.mergeCells('A5:D5');
+  const cliente=val("pres-cliente"), obra=val("pres-obra");
+  ws.getCell('A5').value=`Cliente: ${cliente}${obra?"   ·   Obra: "+obra:""}`;
+  ws.getCell('A5').font={size:10,color:{argb:'FF0F172A'}};
+
+  const head=ws.getRow(7);
+  head.values=["Descripción","Cantidad","Precio unit.","Subtotal"];
+  head.eachCell(c=>{
+    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF16A34A'}};
+    c.font={bold:true,color:{argb:'FFFFFFFF'}};
+    c.alignment={vertical:'middle'};
+  });
+
+  let r=8;
+  presItemsActual.forEach(item=>{
+    const row=ws.getRow(r);
+    row.values=[item.nombre,item.cant,item.precio,item.cant*item.precio];
+    row.getCell(3).numFmt='"$"#,##0';
+    row.getCell(4).numFmt='"$"#,##0';
+    row.eachCell(c=>{ c.border={bottom:{style:'thin',color:{argb:'FFE2E8F0'}}}; });
+    if(r%2===0) row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
+    r++;
+  });
+
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+
+  r++;
+  ws.getCell(`C${r}`).value="Materiales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+  ws.getCell(`D${r}`).value=totalMat; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  r++;
+  ws.getCell(`C${r}`).value="Mano de obra"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+  ws.getCell(`D${r}`).value=mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  r++;
+  ws.getCell(`C${r}`).value="TOTAL"; ws.getCell(`C${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+  ws.getCell(`D${r}`).value=totalMat+mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+  ws.getCell(`D${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+  ws.getCell(`C${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+  ws.getCell(`D${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+
+  if(!esPro()){
+    r+=2;
+    ws.mergeCells(`A${r}:D${r}`);
+    ws.getCell(`A${r}`).value="Hecho con Franz Electricista — app de gestión para técnicos e ingenieros · una marca de Franz Electricidad";
+    ws.getCell(`A${r}`).font={size:8,italic:true,color:{argb:'FFCBD5E1'}};
+    ws.getCell(`A${r}`).alignment={horizontal:'center'};
+  }
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`Presupuesto_${(cliente||"Cliente").replace(/\s+/g,"_")}_${hoy().replace(/\//g,"-")}.xlsx`;
+  a.click(); URL.revokeObjectURL(url);
 }
 function exportarPresWA(){
   const lista=presItemsActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
@@ -1026,10 +1103,66 @@ function exportarComprasPDF(){
     <table><thead><tr><th>Material</th><th>Cantidad</th><th>Proveedor</th></tr></thead><tbody>${filas}</tbody></table></body></html>`;
   const w=window.open("","_blank"); w.document.write(html); w.document.close(); w.print();
 }
-function exportarComprasCSV(){
-  let csv="Material,Cantidad,Proveedor\n";
-  DB.compras.forEach(c=>{csv+=`"${c.nombre}",${c.cant},"${c.prov||""}"\n`;});
-  descargarCSV(csv,`Lista_Compras_Franz_${hoy().replace(/\//g,"-")}.csv`);
+async function exportarComprasCSV(){
+  if(!DB.compras.length){toast("Lista vacía","red");return;}
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet("Lista de compras");
+  const e=datosEmpresaPDF();
+  ws.columns=[{width:44},{width:12},{width:30}];
+
+  ws.mergeCells('A1:C1');
+  ws.getCell('A1').value=e.nombre;
+  ws.getCell('A1').font={bold:true,size:16,color:{argb:'FF0F172A'}};
+
+  const contacto=[e.tel&&`Tel: ${e.tel}`,e.email&&`Email: ${e.email}`,e.dir&&`Dir: ${e.dir}`].filter(Boolean);
+  if(contacto.length){
+    ws.mergeCells('A2:C2');
+    ws.getCell('A2').value=contacto.join("   ·   ");
+    ws.getCell('A2').font={size:9,color:{argb:'FF64748B'}};
+  }
+
+  ws.mergeCells('A4:B4');
+  ws.getCell('A4').value="LISTA DE COMPRAS";
+  ws.getCell('A4').font={bold:true,size:13,color:{argb:'FF16A34A'}};
+  ws.getCell('C4').value=hoy();
+  ws.getCell('C4').alignment={horizontal:'right'};
+  ws.getCell('C4').font={size:10,color:{argb:'FF64748B'}};
+
+  const head=ws.getRow(6);
+  head.values=["Material","Cantidad","Proveedor"];
+  head.eachCell(c=>{
+    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF16A34A'}};
+    c.font={bold:true,color:{argb:'FFFFFFFF'}};
+    c.alignment={vertical:'middle'};
+  });
+
+  let r=7;
+  DB.compras.forEach(item=>{
+    const row=ws.getRow(r);
+    row.values=[item.nombre,item.cant,item.prov||"—"];
+    row.eachCell(c=>{ c.border={bottom:{style:'thin',color:{argb:'FFE2E8F0'}}}; });
+    if(r%2===0) row.eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}}; });
+    r++;
+  });
+
+  r++;
+  ws.getCell(`A${r}`).value=`Total: ${DB.compras.length} ítems`;
+  ws.getCell(`A${r}`).font={bold:true,italic:true,size:10,color:{argb:'FF475569'}};
+
+  if(!esPro()){
+    r+=2;
+    ws.mergeCells(`A${r}:C${r}`);
+    ws.getCell(`A${r}`).value="Hecho con Franz Electricista — app de gestión para técnicos e ingenieros · una marca de Franz Electricidad";
+    ws.getCell(`A${r}`).font={size:8,italic:true,color:{argb:'FFCBD5E1'}};
+    ws.getCell(`A${r}`).alignment={horizontal:'center'};
+  }
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`Lista_Compras_${e.nombre.replace(/\s+/g,"_")}_${hoy().replace(/\//g,"-")}.xlsx`;
+  a.click(); URL.revokeObjectURL(url);
 }
 function exportarComprasWA(){
   if(!DB.compras.length){toast("Lista vacía","red");return;}
@@ -1055,7 +1188,7 @@ function filtrarHistorial(txt){
     <small>${i.sub} | 📅 ${i.fecha}</small></div></div></div>`).join("");
 }
 
-// EXPORT
+// EXPORT (utilidad legacy — ya no la usan los export de compras/presupuestos, que ahora son .xlsx)
 function descargarCSV(csv,nombre){
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
   const url=URL.createObjectURL(blob);
