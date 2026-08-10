@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descargar Franz Electricista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<style>
+:root{
+  --verde:#22c55e; --verde-dark:#16a34a; --cyan:#00d4ff;
+  --bg:#0a0f1a; --bg2:#0d1420; --bg3:#111c2e; --panel:#0f1826;
+  --border:rgba(34,197,94,.18); --border-br:rgba(148,163,184,.14);
+  --text:#e7ecf3; --muted:#8a97a8; --muted2:#5c6b80;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding:0}
+.wrap{max-width:900px;margin:0 auto;padding:50px 24px 80px}
+a{color:var(--verde)}
+h1{font-family:'Rajdhani',sans-serif;font-size:2.1rem;margin-bottom:8px}
+h2{font-family:'Rajdhani',sans-serif;font-size:1.2rem;margin-bottom:6px}
+.sub{color:var(--muted);font-size:.95rem;margin-bottom:36px}
+.back{display:inline-block;margin-bottom:26px;color:var(--muted);font-size:.82rem;text-decoration:none}
+.back:hover{color:var(--verde)}
+
+.destacado{
+  background:linear-gradient(160deg,#101c14,var(--bg2));
+  border:2px solid var(--verde); border-radius:16px; padding:26px;
+  margin-bottom:34px; position:relative;
+}
+.destacado .tag{
+  position:absolute; top:-12px; left:22px; background:var(--verde); color:#04140a;
+  font-size:.68rem; font-weight:700; padding:4px 12px; border-radius:20px; letter-spacing:.03em;
+}
+.destacado h2{font-size:1.4rem}
+.destacado p{color:var(--muted); font-size:.88rem; margin-bottom:16px}
+
+.grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px}
+@media(max-width:720px){ .grid{grid-template-columns:1fr} }
+
+.card{
+  background:var(--bg2); border:1px solid var(--border-br); border-radius:14px;
+  padding:22px; text-align:center;
+}
+.card .ico{font-size:2rem; margin-bottom:10px}
+.card h3{font-family:'Rajdhani',sans-serif; font-size:1.05rem; margin-bottom:6px}
+.card p{color:var(--muted); font-size:.8rem; margin-bottom:16px; min-height:34px}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px; justify-content:center;
+  padding:11px 22px; border-radius:9px; font-weight:600; font-size:.86rem;
+  cursor:pointer; border:1px solid transparent; transition:.15s; width:100%;
+  text-decoration:none;
+}
+.btn-verde{background:var(--verde); color:#04140a;}
+.btn-verde:hover{background:#3fdb79}
+.btn-ghost{border-color:var(--border-br); color:var(--text); background:transparent}
+.btn-ghost:hover{border-color:var(--verde); color:var(--verde)}
+.btn[disabled]{opacity:.5; cursor:default; pointer-events:none}
+
+.nota{
+  background:var(--bg2); border:1px solid var(--border-br); border-radius:10px;
+  padding:14px 16px; font-size:.8rem; color:var(--muted); margin-top:10px;
+}
+.nota b{color:var(--text)}
+details{margin-top:8px}
+summary{cursor:pointer; color:var(--cyan); font-size:.78rem}
+.pasos{margin-top:8px; padding-left:18px; font-size:.78rem; color:var(--muted); line-height:1.9}
+
+footer{border-top:1px solid var(--border-br); margin-top:50px; padding-top:20px; font-size:.78rem; color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="landing.html" class="back">← Volver al inicio</a>
+  <h1>⚡ Descargar Franz Electricista</h1>
+  <p class="sub">Elegí tu dispositivo y seguí los pasos — es gratis y no hace falta ninguna tienda de aplicaciones.</p>
+
+  <div id="destacado" class="destacado" style="display:none">
+    <span class="tag">RECOMENDADO PARA VOS</span>
+    <h2 id="destacado-titulo"></h2>
+    <p id="destacado-texto"></p>
+    <div id="destacado-boton"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ico">🪟</div>
+      <h3>Windows</h3>
+      <p>PC o notebook con Windows 10/11</p>
+      <a class="btn btn-verde" href="descargas/franz-electricista.msix" download>⬇ Descargar</a>
+      <details>
+        <summary>¿Cómo instalarlo?</summary>
+        <ol class="pasos">
+          <li>Descargá el archivo <b>.msix</b></li>
+          <li>Hacé doble clic sobre él</li>
+          <li>Si Windows no te deja instalar por "certificado no confiable": tocá el botón de abajo para ver la solución</li>
+          <li>Tocá "Instalar"</li>
+        </ol>
+      </details>
+      <div class="nota" id="nota-windows" style="display:none">
+        <b>¿Te aparece un error de certificado?</b><br>
+        Es normal en instaladores fuera de la tienda oficial. Solución: abrí PowerShell
+        parado en la carpeta donde descargaste el archivo, y ejecutá:<br>
+        <code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force</code><br>
+        y después probá instalar de nuevo.
+      </div>
+      <button class="btn btn-ghost" style="margin-top:8px;font-size:.72rem" onclick="document.getElementById('nota-windows').style.display='block'">Tengo ese error</button>
+    </div>
+
+    <div class="card">
+      <div class="ico">🤖</div>
+      <h3>Android</h3>
+      <p>Celular o tablet Android</p>
+      <a class="btn btn-verde" href="descargas/franz-electricista.apk" download>⬇ Descargar</a>
+      <details>
+        <summary>¿Cómo instalarlo?</summary>
+        <ol class="pasos">
+          <li>Descargá el archivo <b>.apk</b></li>
+          <li>Abrilo desde tus notificaciones o la carpeta Descargas</li>
+          <li>Si te avisa "instalar apps de origen desconocido": aceptalo, es normal</li>
+          <li>Tocá "Instalar"</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="ico">🍎</div>
+      <h3>iPhone / iPad</h3>
+      <p>Se instala directo desde Safari</p>
+      <button class="btn btn-verde" onclick="alert('Abrí este sitio en Safari (no Chrome) → tocá el botón Compartir (el cuadrado con flecha hacia arriba) → \\'Agregar a pantalla de inicio\\'.')">📋 Ver instrucciones</button>
+      <p style="font-size:.72rem;color:var(--muted2);margin-top:8px">No hace falta descargar nada — se instala desde el propio Safari</p>
+    </div>
+  </div>
+
+  <div class="nota">
+    💡 <b>¿Preferís instalar sin descargar ningún archivo?</b> En cualquier dispositivo, entrá a
+    <a href="index.html">la app directo desde el navegador</a> y usá la opción "Instalar app" del menú —
+    funciona igual de bien y se actualiza sola.
+  </div>
+
+  <footer>Franz Electricista — una marca de Franz Electricidad, Mar del Plata, Argentina.</footer>
+</div>
+
+<script>
+const ua = navigator.userAgent;
+const esWindows = /Windows/i.test(ua);
+const esAndroid = /Android/i.test(ua);
+const esIOS = /iPhone|iPad|iPod/i.test(ua);
+const esMac = /Macintosh/i.test(ua) && !esIOS;
+
+const destacado = document.getElementById('destacado');
+const titulo = document.getElementById('destacado-titulo');
+const texto = document.getElementById('destacado-texto');
+const boton = document.getElementById('destacado-boton');
+
+if (esAndroid) {
+  destacado.style.display = 'block';
+  titulo.textContent = '🤖 Detectamos que estás en Android';
+  texto.textContent = 'Descargá el instalador directo para tu celular.';
+  boton.innerHTML = '<a class="btn btn-verde" href="descargas/franz-electricista.apk" download>⬇ Descargar para Android</a>';
+} else if (esWindows) {
+  destacado.style.display = 'block';
+  titulo.textContent = '🪟 Detectamos que estás en Windows';
+  texto.textContent = 'Descargá el instalador directo para tu PC.';
+  boton.innerHTML = '<a class="btn btn-verde" href="descargas/franz-electricista.msix" download>⬇ Descargar para Windows</a>';
+} else if (esIOS) {
+  destacado.style.display = 'block';
+  titulo.textContent = '🍎 Detectamos que estás en iPhone/iPad';
+  texto.textContent = 'En iOS se instala directo desde Safari, sin descargar ningún archivo.';
+  boton.innerHTML = '<button class="btn btn-verde" onclick="alert(\'Abrí este sitio en Safari → tocá Compartir → Agregar a pantalla de inicio\')">📋 Ver cómo</button>';
+} else if (esMac) {
+  destacado.style.display = 'block';
+  titulo.textContent = '💻 Detectamos que estás en Mac';
+  texto.textContent = 'Instalala directo desde el navegador (Chrome o Edge): entrá a la app y usá "Instalar app" desde el menú.';
+  boton.innerHTML = '<a class="btn btn-verde" href="index.html">Ir a la app</a>';
+}
+</script>
+</body>
+</html>
