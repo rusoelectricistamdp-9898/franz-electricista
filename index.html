@@ -296,24 +296,55 @@
         <div class="fld"><label>Obra / descripción</label><input id="pres-obra" placeholder="Instalación eléctrica completa"></div>
       </div>
     </div>
+
     <div class="panel">
-      <div class="panel-title">Agregar ítem</div>
+      <div class="panel-title">1. Materiales</div>
       <div class="form-grid g3">
         <div class="fld"><label>Material / descripción</label><input id="pres-item-nombre" placeholder="Cable 2,5mm² negro"></div>
         <div class="fld"><label>Cantidad</label><input id="pres-item-cant" type="number" placeholder="10" min="1"></div>
         <div class="fld"><label>Precio unitario ($)</label><input id="pres-item-precio" type="number" placeholder="0"></div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-outline" onclick="agregarItemPres()">+ Agregar ítem</button>
+        <button class="btn btn-outline" onclick="agregarItemPres()">+ Agregar material</button>
         <button class="btn btn-outline" onclick="ir('materiales')">📦 Desde catálogo</button>
       </div>
+      <div id="pres-items" style="margin-top:10px"></div>
     </div>
+
     <div class="panel">
-      <div class="panel-title">Ítems del presupuesto</div>
-      <div id="pres-items"></div>
-      <div class="fld" style="margin-top:10px"><label>Mano de obra ($)</label>
+      <div class="panel-title">2. Componentes / protecciones</div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Componente</label><input id="pres-comp-nombre" placeholder="Térmica 20A 1P"></div>
+        <div class="fld"><label>Cantidad</label><input id="pres-comp-cant" type="number" placeholder="1" min="1"></div>
+        <div class="fld"><label>Precio unitario ($)</label><input id="pres-comp-precio" type="number" placeholder="0"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="agregarComponentePres()">+ Agregar componente</button>
+        <button class="btn btn-outline" onclick="ir('componentes')">🔌 Desde catálogo</button>
+      </div>
+      <div id="pres-componentes" style="margin-top:10px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">3. Mano de obra</div>
+      <div class="fld"><label>Mano de obra ($)</label>
         <input id="pres-mo" type="number" placeholder="0" oninput="actualizarTotalPres()">
       </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">4. Adicionales <small style="color:var(--muted2);font-weight:400">(opcional)</small></div>
+      <div class="form-grid g2">
+        <div class="fld"><label>Concepto</label><input id="pres-adic-concepto" placeholder="Alquiler de andamio, viáticos..."></div>
+        <div class="fld"><label>Importe ($)</label><input id="pres-adic-importe" type="number" placeholder="0"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="agregarAdicionalPres()">+ Agregar adicional</button>
+      </div>
+      <div id="pres-adicionales" style="margin-top:10px"></div>
+    </div>
+
+    <div class="panel">
       <div id="pres-total"></div>
       <div class="btn-row">
         <button class="btn btn-verde" onclick="guardarPresupuesto()">💾 Guardar</button>
