@@ -303,6 +303,7 @@
         <div class="fld"><label>Material / descripción</label><input id="pres-item-nombre" placeholder="Cable 2,5mm² negro"></div>
         <div class="fld"><label>Cantidad</label><input id="pres-item-cant" type="number" placeholder="10" min="1"></div>
         <div class="fld"><label>Precio unitario ($)</label><input id="pres-item-precio" type="number" placeholder="0"></div>
+        <div class="fld"><label>Costo <small style="color:var(--muted2)">(opcional, solo para vos)</small></label><input id="pres-item-costo" type="number" placeholder="0"></div>
       </div>
       <div class="btn-row">
         <button class="btn btn-outline" onclick="agregarItemPres()">+ Agregar material</button>
@@ -317,6 +318,7 @@
         <div class="fld"><label>Componente</label><input id="pres-comp-nombre" placeholder="Térmica 20A 1P"></div>
         <div class="fld"><label>Cantidad</label><input id="pres-comp-cant" type="number" placeholder="1" min="1"></div>
         <div class="fld"><label>Precio unitario ($)</label><input id="pres-comp-precio" type="number" placeholder="0"></div>
+        <div class="fld"><label>Costo <small style="color:var(--muted2)">(opcional, solo para vos)</small></label><input id="pres-comp-costo" type="number" placeholder="0"></div>
       </div>
       <div class="btn-row">
         <button class="btn btn-outline" onclick="agregarComponentePres()">+ Agregar componente</button>
@@ -351,6 +353,7 @@
         <button class="btn btn-outline" onclick="exportarPresPDF()">📄 PDF</button>
         <button class="btn btn-outline" onclick="exportarPresCSV()">📊 Excel</button>
         <button class="btn btn-outline" onclick="exportarPresWA()">💬 WhatsApp</button>
+        <button class="btn btn-outline" onclick="exportarPresInternoPDF()" style="border-color:var(--yellow);color:var(--yellow)">🔒 Interno</button>
       </div>
     </div>
     <div class="panel">
@@ -451,17 +454,33 @@
       <div class="tab" onclick="tabCalc(this,'calc-materiales')">Cant. materiales</div>
     </div>
     <div class="calc-box" id="calc-canio">
-      <div class="panel-title">Verificación ocupación caño PVC (AEA 90364)</div>
+      <div class="panel-title">Verificación de ocupación de canalización (AEA 90364)</div>
       <div class="form-grid g3">
-        <div class="fld"><label>Diámetro caño</label>
+        <div class="fld"><label>Tipo de canalización</label>
+          <select id="aea-tipo" onchange="cambiarTipoCanalizacion()">
+            <option value="rigido">Caño PVC rígido</option>
+            <option value="corrugado">Caño corrugado flexible</option>
+            <option value="bandeja">Bandeja / cable canal</option>
+          </select>
+        </div>
+        <div class="fld" id="aea-diam-wrap"><label>Diámetro caño</label>
           <select id="aea-diam"><option value="20">20mm</option><option value="25">25mm</option><option value="32">32mm</option><option value="40">40mm</option><option value="50">50mm</option></select>
         </div>
-        <div class="fld"><label>Sección conductor</label>
-          <select id="aea-secc"><option value="1.5">1,5mm²</option><option value="2.5">2,5mm²</option><option value="4">4mm²</option><option value="6">6mm²</option><option value="10">10mm²</option></select>
-        </div>
-        <div class="fld"><label>Cantidad de conductores</label><input id="aea-cant" type="number" placeholder="3" min="1"></div>
       </div>
-      <button class="btn btn-verde" style="margin-top:10px" onclick="calcAEA()">⚡ Calcular</button>
+      <div id="aea-bandeja-nota" class="resultado-box" style="display:none"></div>
+      <div id="aea-form-conductor">
+        <div class="form-grid g3">
+          <div class="fld"><label>Sección conductor</label>
+            <select id="aea-secc"><option value="1.5">1,5mm²</option><option value="2.5">2,5mm²</option><option value="4">4mm²</option><option value="6">6mm²</option><option value="10">10mm²</option></select>
+          </div>
+          <div class="fld"><label>Cantidad</label><input id="aea-cant" type="number" placeholder="3" min="1"></div>
+          <div class="fld" style="display:flex;align-items:flex-end">
+            <button class="btn btn-outline btn-full" onclick="agregarConductorAEA()">+ Agregar conductor</button>
+          </div>
+        </div>
+        <div id="aea-lista-conductores" style="margin-top:8px"></div>
+        <button class="btn btn-verde" style="margin-top:10px" onclick="calcAEA()">⚡ Calcular ocupación</button>
+      </div>
       <div id="aea-resultado" class="resultado-box" style="display:none"></div>
     </div>
     <div class="calc-box" id="calc-tension" style="display:none">
