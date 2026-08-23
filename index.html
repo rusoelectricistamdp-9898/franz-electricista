@@ -460,11 +460,25 @@
           <select id="aea-tipo" onchange="cambiarTipoCanalizacion()">
             <option value="rigido">Caño PVC rígido</option>
             <option value="corrugado">Caño corrugado flexible</option>
-            <option value="bandeja">Bandeja / cable canal</option>
+            <option value="bandeja">Cable canal (canaleta PVC)</option>
           </select>
         </div>
         <div class="fld" id="aea-diam-wrap"><label>Diámetro caño</label>
           <select id="aea-diam"><option value="20">20mm</option><option value="25">25mm</option><option value="32">32mm</option><option value="40">40mm</option><option value="50">50mm</option></select>
+        </div>
+        <div class="fld" id="aea-canaleta-wrap" style="display:none"><label>Medida de cable canal</label>
+          <select id="aea-canaleta">
+            <option value="10x10">10 x 10mm</option>
+            <option value="20x20">20 x 20mm</option>
+            <option value="20x12">20 x 12mm</option>
+            <option value="32x12">32 x 12mm</option>
+            <option value="40x25">40 x 25mm</option>
+            <option value="40x40">40 x 40mm</option>
+            <option value="60x40">60 x 40mm</option>
+            <option value="60x60">60 x 60mm</option>
+            <option value="100x50">100 x 50mm</option>
+            <option value="100x100">100 x 100mm</option>
+          </select>
         </div>
       </div>
       <div id="aea-bandeja-nota" class="resultado-box" style="display:none"></div>
@@ -479,6 +493,7 @@
           </div>
         </div>
         <div id="aea-lista-conductores" style="margin-top:8px"></div>
+
         <button class="btn btn-verde" style="margin-top:10px" onclick="calcAEA()">⚡ Calcular ocupación</button>
       </div>
       <div id="aea-resultado" class="resultado-box" style="display:none"></div>
