@@ -526,8 +526,9 @@ function agregarItemPres(){
   if(!nombre){toast("Ingresá el ítem","red");return;}
   const cant=parseFloat(val("pres-item-cant"))||1;
   const precio=parseFloat(val("pres-item-precio"))||0;
-  presItemsActual.push({nombre,cant,precio});
-  ["pres-item-nombre","pres-item-cant","pres-item-precio"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  const costo=parseFloat(val("pres-item-costo"))||0;
+  presItemsActual.push({nombre,cant,precio,costo});
+  ["pres-item-nombre","pres-item-cant","pres-item-precio","pres-item-costo"].forEach(id=>{const e=get(id);if(e)e.value="";});
   renderPresItems();
 }
 function quitarItemPres(i){ presItemsActual.splice(i,1); renderPresItems(); }
@@ -546,8 +547,9 @@ function agregarComponentePres(){
   if(!nombre){toast("Ingresá el componente","red");return;}
   const cant=parseFloat(val("pres-comp-cant"))||1;
   const precio=parseFloat(val("pres-comp-precio"))||0;
-  presComponentesActual.push({nombre,cant,precio});
-  ["pres-comp-nombre","pres-comp-cant","pres-comp-precio"].forEach(id=>{const e=get(id);if(e)e.value="";});
+  const costo=parseFloat(val("pres-comp-costo"))||0;
+  presComponentesActual.push({nombre,cant,precio,costo});
+  ["pres-comp-nombre","pres-comp-cant","pres-comp-precio","pres-comp-costo"].forEach(id=>{const e=get(id);if(e)e.value="";});
   renderPresComponentes();
 }
 function quitarComponentePres(i){ presComponentesActual.splice(i,1); renderPresComponentes(); }
@@ -631,6 +633,7 @@ function mostrarPresupuestos(){
     <small>📅 ${p.fecha} | ${p.items.length} ítems | <b style="color:var(--verde)">${fmt(p.total)}</b></small></div>
     <div class="item-actions">
       <button class="btn btn-outline btn-sm" onclick="exportarPresPDFById('${p.id}')">📄</button>
+      <button class="btn btn-outline btn-sm" style="border-color:var(--yellow);color:var(--yellow)" onclick="exportarPresInternoPDFById('${p.id}')">🔒</button>
       <button class="btn btn-outline btn-sm" onclick="exportarPresWAById('${p.id}')">💬</button>
       <button class="btn btn-verde btn-sm" onclick="generarFacturaDesdePresupuesto('${p.id}')">🧾</button>
       <button class="btn btn-red btn-sm" onclick="eliminarPresupuesto('${p.id}')">✕</button>
@@ -749,6 +752,75 @@ function exportarPresPDF(){
   });
 }
 function exportarPresPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPres(p); }
+
+// ══════════════════════════════════════
+// PRESUPUESTO INTERNO — con costo y margen, NUNCA se le manda al cliente
+// ══════════════════════════════════════
+function genPDFPresInterno(p){
+  const componentes=p.componentes||[];
+  const filaConMargen=item=>{
+    const costo=item.costo||0;
+    const margenPct=costo>0?(((item.precio-costo)/costo)*100):null;
+    return `<tr>
+      <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+      <td style="text-align:right">${fmt(costo)}</td>
+      <td style="text-align:right">${fmt(item.precio)}</td>
+      <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td>
+      <td style="text-align:right;color:${margenPct===null?"#94a3b8":margenPct>=0?"#16a34a":"#ef4444"}">${margenPct===null?"—":margenPct.toFixed(0)+"%"}</td>
+    </tr>`;
+  };
+  const filasMat=p.items.map(filaConMargen).join("");
+  const filasComp=componentes.map(filaConMargen).join("");
+  const costoTotalMat=p.items.reduce((s,i)=>s+i.cant*(i.costo||0),0);
+  const costoTotalComp=componentes.reduce((s,i)=>s+i.cant*(i.costo||0),0);
+  const precioTotalMat=p.items.reduce((s,i)=>s+i.cant*i.precio,0);
+  const precioTotalComp=componentes.reduce((s,i)=>s+i.cant*i.precio,0);
+  const costoTotal=costoTotalMat+costoTotalComp;
+  const precioTotal=precioTotalMat+precioTotalComp;
+  const margenBruto=precioTotal-costoTotal;
+  const margenPctTotal=costoTotal>0?((margenBruto/costoTotal)*100):0;
+  const numero = "P-"+String(p.id||"").slice(-5).toUpperCase();
+  const seccion=(titulo,filas)=>filas?`<div class="doc-titulo" style="font-size:12px;margin:16px 0 6px">${titulo}</div>
+    <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Costo</th><th style="text-align:right">Precio</th><th style="text-align:right">Subtotal</th><th style="text-align:right">Margen</th></tr></thead>
+    <tbody>${filas}</tbody></table>`:"";
+  const html=`<html><head><meta charset="UTF-8"><title>Presupuesto interno ${numero}</title><style>${ESTILOS_PDF}</style></head><body>
+    <div style="background:#f59e0b;color:#000;font-weight:700;text-align:center;padding:8px;border-radius:8px;margin-bottom:16px;font-size:12px">
+      🔒 USO INTERNO — NO ENVIAR AL CLIENTE
+    </div>
+    ${membretePDF()}
+    <div class="doc-head">
+      <div><div class="doc-titulo">PRESUPUESTO INTERNO (costo y margen)</div><div class="doc-num">N° ${numero} &nbsp;·&nbsp; ${p.fecha}</div></div>
+    </div>
+    <div class="datos-box">
+      <b>Cliente:</b> ${p.cliente}${p.obra?` &nbsp;·&nbsp; <b>Obra:</b> ${p.obra}`:""}
+    </div>
+    ${seccion("MATERIALES", filasMat)}
+    ${seccion("COMPONENTES / PROTECCIONES", filasComp)}
+    <div class="totales" style="width:320px">
+      <div class="fila"><span>Costo total</span><span>${fmt(costoTotal)}</span></div>
+      <div class="fila"><span>Precio total (materiales+comp.)</span><span>${fmt(precioTotal)}</span></div>
+      <div class="fila"><span>Mano de obra</span><span>${fmt(p.mo||0)}</span></div>
+      <div class="fila"><span>Margen bruto</span><span style="color:${margenBruto>=0?"#16a34a":"#ef4444"}">${fmt(margenBruto)} (${margenPctTotal.toFixed(0)}%)</span></div>
+      <div class="fila final"><span>TOTAL AL CLIENTE</span><span>${fmt(p.total)}</span></div>
+    </div>
+    <div class="terminos">Documento de uso interno — contiene información de costos y márgenes que no debe compartirse con el cliente.</div>
+  </body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+function exportarPresInternoPDF(){
+  if(!presItemsActual.length && !presComponentesActual.length){toast("Sin ítems","red");return;}
+  const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
+  const mo=parseFloat(val("pres-mo"))||0;
+  const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
+  genPDFPresInterno({
+    cliente:val("pres-cliente"),obra:val("pres-obra"),
+    items:presItemsActual,componentes:presComponentesActual,
+    mo,total:totalMat+totalComp+mo+totalAdic,fecha:hoy()
+  });
+}
+function exportarPresInternoPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPresInterno(p); }
 
 // FACTURAS
 function numeroFacturaSiguiente(){
@@ -1039,18 +1111,65 @@ function tabCalc(el,id){
 }
 const tablaAEA={"1.5":{20:9,25:15,32:26,40:37,50:58},"2.5":{20:5,25:9,32:16,40:23,50:36},
   "4":{20:4,25:6,32:11,40:16,50:25},"6":{20:2,25:4,32:8,40:11,50:18},"10":{20:1,25:2,32:4,40:6,50:9}};
-function calcAEA(){
-  const diam=parseInt(val("aea-diam")), secc=val("aea-secc"), cant=parseInt(val("aea-cant"))||0;
-  const el=get("aea-resultado");
-  if(!cant){el.innerHTML="⚠ Ingresá la cantidad de conductores";el.style.display="block";return;}
-  const tabla=tablaAEA[secc]; if(!tabla){el.innerHTML="⚠ Sección no disponible";el.style.display="block";return;}
-  const max=tabla[diam];
-  if(cant<=max){
-    el.innerHTML=`✅ <b>Canalización correcta</b><br>Conductores: ${cant} de ${max} máximo | Ocupación: ${Math.round(cant/max*100)}%`;
-  } else {
-    const rec=Object.entries(tabla).find(([d,m])=>cant<=m&&parseInt(d)>diam);
-    el.innerHTML=`❌ <b>Exceso de ocupación</b><br>Conductores: ${cant} — Máximo: ${max}<br>${rec?`✅ Caño recomendado: <b>${rec[0]}mm</b>`:"⚠ Usar bandeja portacables"}`;
+
+function cambiarTipoCanalizacion(){
+  const tipo=val("aea-tipo");
+  const esBandeja = tipo==="bandeja";
+  const wrapDiam=get("aea-diam-wrap"), formCond=get("aea-form-conductor"), notaBandeja=get("aea-bandeja-nota");
+  if(wrapDiam) wrapDiam.style.display = esBandeja?"none":"block";
+  if(formCond) formCond.style.display = esBandeja?"none":"block";
+  if(notaBandeja){
+    notaBandeja.style.display = esBandeja?"block":"none";
+    if(esBandeja){
+      notaBandeja.innerHTML=`ℹ️ Las bandejas y cable canal se dimensionan por el área de su sección, no por la tabla de ocupación de caños redondos que usa esta calculadora. Verificá la capacidad real con la hoja técnica del fabricante de tu bandeja — como regla general de referencia, no superar el 40% del área útil con la suma de las áreas de los conductores.`;
+    }
   }
+  const el=get("aea-resultado"); if(el) el.style.display="none";
+}
+
+let conductoresAEA=[];
+function agregarConductorAEA(){
+  const secc=val("aea-secc"), cant=parseInt(val("aea-cant"))||0;
+  if(!cant){toast("Ingresá la cantidad","red");return;}
+  conductoresAEA.push({secc,cant});
+  const e=get("aea-cant"); if(e) e.value="";
+  renderConductoresAEA();
+}
+function quitarConductorAEA(i){ conductoresAEA.splice(i,1); renderConductoresAEA(); }
+function renderConductoresAEA(){
+  const cont=get("aea-lista-conductores"); if(!cont) return;
+  if(!conductoresAEA.length){cont.innerHTML="";return;}
+  cont.innerHTML=conductoresAEA.map((c,i)=>`<div class="item"><div class="item-row">
+    <div>${c.cant} × conductor ${c.secc}mm²</div>
+    <button class="btn btn-red btn-sm" onclick="quitarConductorAEA(${i})">✕</button>
+    </div></div>`).join("");
+}
+function calcAEA(){
+  const diam=parseInt(val("aea-diam")), tipo=val("aea-tipo");
+  const el=get("aea-resultado");
+  if(!conductoresAEA.length){el.innerHTML="⚠ Agregá al menos un conductor a la lista";el.style.display="block";return;}
+
+  let fraccionUsada=0, detalle="", huboError=false;
+  conductoresAEA.forEach(c=>{
+    const tabla=tablaAEA[c.secc];
+    const max=tabla?tabla[diam]:null;
+    if(!max){ huboError=true; detalle+=`<div>⚠ Sin datos para conductores de ${c.secc}mm² en caño de ${diam}mm</div>`; return; }
+    const frac=c.cant/max;
+    fraccionUsada+=frac;
+    detalle+=`<div>${c.cant} × ${c.secc}mm² → ${(frac*100).toFixed(0)}% de la capacidad del caño (si fuera solo esa sección, entrarían hasta ${max})</div>`;
+  });
+  if(huboError){ el.innerHTML=detalle; el.style.display="block"; return; }
+
+  const margenCorrugado = tipo==="corrugado" ? 1.15 : 1;
+  const pctFinal = fraccionUsada*margenCorrugado*100;
+  const ok = pctFinal<=100;
+
+  el.innerHTML=`
+    <div style="margin-bottom:8px;font-size:.85em">${detalle}</div>
+    <div style="font-size:1.1em;font-weight:700">Ocupación total: ${pctFinal.toFixed(0)}%${tipo==="corrugado"?" (con margen de seguridad aplicado)":""}</div>
+    <div style="margin-top:4px">${ok?"✅ Los conductores entran en el caño elegido":"❌ No entran — probá un caño de mayor diámetro o dividí en dos canalizaciones"}</div>
+    ${tipo==="corrugado"?`<div style="margin-top:8px;font-size:.78em;color:var(--muted2)">El caño corrugado suele tener un diámetro interno real algo menor al nominal — se aplicó un 15% de margen adicional por seguridad. Si el resultado da muy justo, verificá con el dato del fabricante.</div>`:""}
+  `;
   el.style.display="block";
 }
 function calcCaidaTension(){
@@ -1154,21 +1273,38 @@ const CHECKLISTS={
   pat:["Jabalina copperweld instalada","Caja de inspección accesible","Grapa de conexión apretada","Cable verde/amarillo correcto","Barra equipotencial presente","Medición < 10Ω","Gel conductor aplicado","Protocolo SRT 900/15 realizado"],
   tablero:["Gabinete con IP adecuado","Diferencial general instalado","Térmica general calibrada","Térmicas de circuito instaladas","Peine de distribución correcto","Barra de neutros conectada","Barra de tierra conectada","Cables rotulados","DPS instalado","Tapa ciega en módulos vacíos"],
 };
-let checkActual={};
+let checkSeleccionados=new Set();
 function cargarChecklist(tipo){
   const cont=get("om-checklist"), btns=get("om-btns");
+  checkSeleccionados=new Set();
   if(!tipo||!CHECKLISTS[tipo]){cont.innerHTML="";if(btns)btns.style.display="none";return;}
-  checkActual={};
-  cont.innerHTML=CHECKLISTS[tipo].map((item,i)=>`<div class="check-row">
-    <input type="checkbox" id="chk-${i}" onchange="checkActual['${item.replace(/'/g,"\\'")}']= this.checked">
-    <label for="chk-${i}" style="text-transform:none;font-size:.84rem">${item}</label>
+  cont.innerHTML=CHECKLISTS[tipo].map((item,i)=>`
+    <div class="check-item" id="chk-item-${i}" onclick="toggleCheckOmision(${i})"
+      style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:7px;
+      border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:.15s;user-select:none">
+      <div id="chk-box-${i}" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--muted2);
+        display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:900;color:#fff;transition:.15s"></div>
+      <span style="font-size:.86rem;text-transform:none">${escapeHtml(item)}</span>
     </div>`).join("");
   if(btns) btns.style.display="flex";
+}
+function toggleCheckOmision(i){
+  const box=get(`chk-box-${i}`), row=get(`chk-item-${i}`);
+  if(!box||!row) return;
+  if(checkSeleccionados.has(i)){
+    checkSeleccionados.delete(i);
+    box.style.background="transparent"; box.style.borderColor="var(--muted2)"; box.innerHTML="";
+    row.style.borderColor="var(--border)";
+  } else {
+    checkSeleccionados.add(i);
+    box.style.background="var(--verde)"; box.style.borderColor="var(--verde)"; box.innerHTML="⚡";
+    row.style.borderColor="var(--verde)";
+  }
 }
 function guardarOmision(){
   const tipo=val("om-tipo"); if(!tipo){toast("Seleccioná un tipo","red");return;}
   const checklist=CHECKLISTS[tipo]||[];
-  const resultados=checklist.map(item=>({item,ok:!!checkActual[item]}));
+  const resultados=checklist.map((item,i)=>({item,ok:checkSeleccionados.has(i)}));
   const ok=resultados.filter(r=>r.ok).length;
   DB.omisiones.push({id:uid(),tipo,obra:val("om-obra"),resultados,ok,total:checklist.length,fecha:hoy()});
   guardarDB("omisiones"); mostrarOmisiones(); toast("Verificación guardada");
@@ -1176,8 +1312,8 @@ function guardarOmision(){
 function exportarOmisionPDF(){
   const tipo=val("om-tipo"); if(!tipo){toast("Completá el checklist","red");return;}
   const checklist=CHECKLISTS[tipo]||[];
-  const ok=Object.values(checkActual).filter(v=>v).length;
-  const filas=checklist.map(item=>`<tr><td>${item}</td><td style="text-align:center;color:${checkActual[item]?"#16a34a":"#ef4444"}">${checkActual[item]?"✅ Conforme":"❌ No conforme"}</td></tr>`).join("");
+  const ok=checkSeleccionados.size;
+  const filas=checklist.map((item,i)=>`<tr><td>${item}</td><td style="text-align:center;color:${checkSeleccionados.has(i)?"#16a34a":"#ef4444"}">${checkSeleccionados.has(i)?"✅ Conforme":"❌ No conforme"}</td></tr>`).join("");
   const html=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:30px;font-size:12px}
     h1{color:#16a34a}table{width:100%;border-collapse:collapse;margin-top:10px}
     th{background:#16a34a;color:#fff;padding:8px}td{padding:7px;border-bottom:1px solid #ddd}</style></head><body>
