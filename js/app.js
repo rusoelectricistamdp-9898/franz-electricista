@@ -1111,17 +1111,25 @@ function tabCalc(el,id){
 }
 const tablaAEA={"1.5":{20:9,25:15,32:26,40:37,50:58},"2.5":{20:5,25:9,32:16,40:23,50:36},
   "4":{20:4,25:6,32:11,40:16,50:25},"6":{20:2,25:4,32:8,40:11,50:18},"10":{20:1,25:2,32:4,40:6,50:9}};
+// Diámetro exterior real aproximado (mm) de cable unipolar IRAM NM 247-3, según ficha técnica de fabricante (Cobrhil)
+const diametroExteriorConductor={"1.5":2.84,"2.5":3.66,"4":4.11,"6":4.95,"10":6.35};
+// Medidas comerciales habituales de cable canal PVC en Argentina (ancho x alto, mm)
+const medidasCanaleta={
+  "10x10":{a:10,h:10}, "20x20":{a:20,h:20}, "20x12":{a:20,h:12}, "32x12":{a:32,h:12},
+  "40x25":{a:40,h:25}, "40x40":{a:40,h:40}, "60x40":{a:60,h:40}, "60x60":{a:60,h:60},
+  "100x50":{a:100,h:50}, "100x100":{a:100,h:100}
+};
 
 function cambiarTipoCanalizacion(){
   const tipo=val("aea-tipo");
   const esBandeja = tipo==="bandeja";
-  const wrapDiam=get("aea-diam-wrap"), formCond=get("aea-form-conductor"), notaBandeja=get("aea-bandeja-nota");
+  const wrapDiam=get("aea-diam-wrap"), wrapCanaleta=get("aea-canaleta-wrap"), notaBandeja=get("aea-bandeja-nota");
   if(wrapDiam) wrapDiam.style.display = esBandeja?"none":"block";
-  if(formCond) formCond.style.display = esBandeja?"none":"block";
+  if(wrapCanaleta) wrapCanaleta.style.display = esBandeja?"block":"none";
   if(notaBandeja){
     notaBandeja.style.display = esBandeja?"block":"none";
     if(esBandeja){
-      notaBandeja.innerHTML=`ℹ️ Las bandejas y cable canal se dimensionan por el área de su sección, no por la tabla de ocupación de caños redondos que usa esta calculadora. Verificá la capacidad real con la hoja técnica del fabricante de tu bandeja — como regla general de referencia, no superar el 40% del área útil con la suma de las áreas de los conductores.`;
+      notaBandeja.innerHTML=`ℹ️ Cálculo por área ocupada, con el diámetro real de cada conductor (IRAM NM 247-3) y el criterio AEA de ocupación máxima del 40% para 3 o más conductores. Las medidas de cable canal listadas son las comerciales habituales — confirmá la disponible en tu proveedor.`;
     }
   }
   const el=get("aea-resultado"); if(el) el.style.display="none";
@@ -1145,10 +1153,16 @@ function renderConductoresAEA(){
     </div></div>`).join("");
 }
 function calcAEA(){
-  const diam=parseInt(val("aea-diam")), tipo=val("aea-tipo");
+  const tipo=val("aea-tipo");
   const el=get("aea-resultado");
   if(!conductoresAEA.length){el.innerHTML="⚠ Agregá al menos un conductor a la lista";el.style.display="block";return;}
 
+  if(tipo==="bandeja"){
+    calcAEACanaleta(el);
+    return;
+  }
+
+  const diam=parseInt(val("aea-diam"));
   let fraccionUsada=0, detalle="", huboError=false;
   conductoresAEA.forEach(c=>{
     const tabla=tablaAEA[c.secc];
@@ -1169,6 +1183,43 @@ function calcAEA(){
     <div style="font-size:1.1em;font-weight:700">Ocupación total: ${pctFinal.toFixed(0)}%${tipo==="corrugado"?" (con margen de seguridad aplicado)":""}</div>
     <div style="margin-top:4px">${ok?"✅ Los conductores entran en el caño elegido":"❌ No entran — probá un caño de mayor diámetro o dividí en dos canalizaciones"}</div>
     ${tipo==="corrugado"?`<div style="margin-top:8px;font-size:.78em;color:var(--muted2)">El caño corrugado suele tener un diámetro interno real algo menor al nominal — se aplicó un 15% de margen adicional por seguridad. Si el resultado da muy justo, verificá con el dato del fabricante.</div>`:""}
+  `;
+  el.style.display="block";
+}
+function calcAEACanaleta(el){
+  const medida=val("aea-canaleta");
+  const dims=medidasCanaleta[medida];
+  if(!dims){el.innerHTML="⚠ Elegí una medida de cable canal";el.style.display="block";return;}
+
+  // Área interna útil: se descuenta ~10% por el espesor de pared de la canaleta (aproximación razonable)
+  const areaNominal=dims.a*dims.h;
+  const areaUtil=areaNominal*0.9;
+  const areaMaxima=areaUtil*0.40; // criterio AEA: máx. 40% de ocupación para 3 o más conductores
+
+  let areaOcupada=0, detalle="", huboError=false, totalConductores=0;
+  conductoresAEA.forEach(c=>{
+    const dExt=diametroExteriorConductor[c.secc];
+    if(!dExt){ huboError=true; detalle+=`<div>⚠ Sin dato de diámetro para ${c.secc}mm²</div>`; return; }
+    const areaUnitaria=Math.PI*Math.pow(dExt/2,2);
+    const areaTotalItem=areaUnitaria*c.cant;
+    areaOcupada+=areaTotalItem;
+    totalConductores+=c.cant;
+    detalle+=`<div>${c.cant} × ${c.secc}mm² (Ø ext. ${dExt}mm) → ${areaTotalItem.toFixed(1)}mm²</div>`;
+  });
+  if(huboError){ el.innerHTML=detalle; el.style.display="block"; return; }
+
+  const pctOcupacion=(areaOcupada/areaUtil)*100;
+  const ok=areaOcupada<=areaMaxima;
+
+  el.innerHTML=`
+    <div style="margin-bottom:8px;font-size:.85em">${detalle}</div>
+    <div style="font-size:.85em;color:var(--muted2);margin-bottom:8px">
+      Cable canal ${medida}mm → área útil estimada: ${areaUtil.toFixed(0)}mm² · máximo permitido (40%): ${areaMaxima.toFixed(0)}mm²<br>
+      Área total ocupada por los ${totalConductores} conductores: <b>${areaOcupada.toFixed(0)}mm² (${pctOcupacion.toFixed(0)}%)</b>
+    </div>
+    <div style="font-size:1.1em;font-weight:700">${ok?"✅ Entran dentro del criterio AEA (máx. 40% de ocupación)":"❌ Superan el 40% de ocupación permitido"}</div>
+    <div style="margin-top:4px">${ok?"Podés usar este cable canal para estos conductores.":"Probá una medida de cable canal más grande, o dividí los conductores en dos canalizaciones."}</div>
+    <div style="margin-top:8px;font-size:.75em;color:var(--muted2)">Cálculo basado en el diámetro exterior real de cable unipolar IRAM NM 247-3 (ficha técnica de fabricante) y el criterio AEA de ocupación máxima del 40% para 3 o más conductores. El área útil de la canaleta se estimó descontando un 10% por espesor de pared — verificá siempre con la medida real de tu proveedor si el resultado da muy justo.</div>
   `;
   el.style.display="block";
 }
