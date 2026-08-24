@@ -332,6 +332,7 @@
       <div class="fld"><label>Mano de obra ($)</label>
         <input id="pres-mo" type="number" placeholder="0" oninput="actualizarTotalPres()">
       </div>
+      <button class="btn btn-outline btn-sm" onclick="abrirTarifarioAAIERIC()">📋 Ver tarifario de referencia (AAIERIC)</button>
     </div>
 
     <div class="panel">
@@ -348,6 +349,13 @@
 
     <div class="panel">
       <div id="pres-total"></div>
+      <div class="fld" style="margin-top:8px">
+        <label>Formato del PDF/Excel/WhatsApp para el cliente</label>
+        <select id="pres-modo-export" onchange="localStorage.setItem('franz-modo-export', this.value)">
+          <option value="desglosado">Desglosado (Materiales / Componentes / Mano de obra por separado)</option>
+          <option value="final">Solo precio final (sin detalle de ítems)</option>
+        </select>
+      </div>
       <div class="btn-row">
         <button class="btn btn-verde" onclick="guardarPresupuesto()">💾 Guardar</button>
         <button class="btn btn-outline" onclick="exportarPresPDF()">📄 PDF</button>
@@ -415,8 +423,20 @@
           <select id="rel-pat"><option>Buena</option><option>Regular</option><option>Mala</option><option>No posee</option></select>
         </div>
       </div>
-      <div class="check-row"><input type="checkbox" id="rel-aea"><label for="rel-aea" style="text-transform:none;font-size:.85rem">Cumple criterios AEA 90364</label></div>
-      <div class="check-row"><input type="checkbox" id="rel-interv"><label for="rel-interv" style="text-transform:none;font-size:.85rem">Intervenciones previas por terceros</label></div>
+      <div class="check-item" id="chk-row-rel-aea" onclick="toggleCasillaRayo('rel-aea')"
+        style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:7px;
+        border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:.15s;user-select:none">
+        <div id="chk-box-rel-aea" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--muted2);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:900;color:#fff;transition:.15s"></div>
+        <span style="font-size:.85rem">Cumple criterios AEA 90364</span>
+      </div>
+      <div class="check-item" id="chk-row-rel-interv" onclick="toggleCasillaRayo('rel-interv')"
+        style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:7px;
+        border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:.15s;user-select:none">
+        <div id="chk-box-rel-interv" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--muted2);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:900;color:#fff;transition:.15s"></div>
+        <span style="font-size:.85rem">Intervenciones previas por terceros</span>
+      </div>
       <div class="fld" style="margin-top:10px"><label>Observaciones</label><textarea id="rel-obs" placeholder="Estado general de la instalación..."></textarea></div>
       <div class="fld">
         <label>📷 Fotos de fallas / hallazgos</label>
@@ -452,6 +472,7 @@
       <div class="tab" onclick="tabCalc(this,'calc-motor')">Motor</div>
       <div class="tab" onclick="tabCalc(this,'calc-pat')">PAT</div>
       <div class="tab" onclick="tabCalc(this,'calc-materiales')">Cant. materiales</div>
+      <div class="tab" onclick="tabCalc(this,'calc-cargas')">Cómputo de cargas</div>
     </div>
     <div class="calc-box" id="calc-canio">
       <div class="panel-title">Verificación de ocupación de canalización (AEA 90364)</div>
@@ -576,6 +597,28 @@
       </div>
       <button class="btn btn-verde" style="margin-top:10px" onclick="calcMateriales()">📦 Calcular cantidades</button>
       <div id="mt-resultado" class="resultado-box" style="display:none"></div>
+    </div>
+
+    <div class="calc-box" id="calc-cargas" style="display:none">
+      <div class="panel-title">Cómputo de cargas — consumo total y conductor principal</div>
+      <p style="color:var(--muted2);font-size:.78rem;margin-bottom:10px">
+        Cargá todos los equipos eléctricos de la instalación (iluminación, tomas, aire acondicionado, termotanque, etc.) y calculá el consumo total, la corriente y el conductor principal recomendado.
+      </p>
+      <div class="form-grid g3">
+        <div class="fld"><label>Equipo</label><input id="carga-nombre" placeholder="Aire acondicionado 3000W"></div>
+        <div class="fld"><label>Potencia (W)</label><input id="carga-pot" type="number" placeholder="3000"></div>
+        <div class="fld"><label>Cantidad</label><input id="carga-cant" type="number" placeholder="1" min="1" value="1"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-outline" onclick="agregarCargaElectrica()">+ Agregar equipo</button></div>
+      <div id="carga-lista" style="margin-top:8px"></div>
+      <div class="form-grid g2" style="margin-top:10px">
+        <div class="fld"><label>Sistema</label>
+          <select id="carga-sistema"><option value="mono">Monofásico 220V</option><option value="tri">Trifásico 380V</option></select>
+        </div>
+        <div class="fld"><label>Factor de potencia</label><input id="carga-fp" type="number" value="0.9" step="0.01"></div>
+      </div>
+      <button class="btn btn-verde" style="margin-top:10px" onclick="calcularCargasElectricas()">⚡ Calcular consumo total</button>
+      <div id="carga-resultado" class="resultado-box" style="display:none"></div>
     </div>
   </div>
 
