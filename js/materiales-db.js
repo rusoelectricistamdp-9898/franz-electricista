@@ -2115,6 +2115,12 @@ const MATERIALES_CATALOGO = [
   {nombre:"Bolsas para escombro (rollo x10)",categoria:"Consumibles",marca:"Genérico",modelo:"",caract:"",prov:"",obs:""},
   {nombre:"Fotocélula de seguridad para portón (par)",categoria:"Industrial",marca:"Genérico",modelo:"",caract:"Emisor y receptor infrarrojo, corte de movimiento ante obstáculo",prov:"",obs:""},
   {nombre:"Cremallera para portón corredizo (tramo 1m)",categoria:"Industrial",marca:"Genérico",modelo:"",caract:"Nylon o galvanizada, módulo 4",prov:"",obs:""},
+  {nombre:"Caja de medición monofásica (para pilar)",categoria:"Tableros",marca:"Genérico",modelo:"",caract:"Homologada por distribuidora, según AEA 95150",prov:"",obs:"Exigida por la distribuidora (EDEA/EDENOR/EDESUR) para instalar el medidor"},
+  {nombre:"Caja de medición trifásica (para pilar)",categoria:"Tableros",marca:"Genérico",modelo:"",caract:"Homologada por distribuidora, según AEA 95150",prov:"",obs:"Exigida por la distribuidora (EDEA/EDENOR/EDESUR) para instalar el medidor"},
+  {nombre:"Resistencia de descongelamiento para evaporador",categoria:"Refrigeración",marca:"Genérico",modelo:"",caract:"Blindada, para deshielo por resistencia (no gas caliente)",prov:"",obs:"Va junto al temporizador de descongelamiento — es el elemento que calienta"},
+  {nombre:"Sonda de temperatura NTC para termostato digital",categoria:"Refrigeración",marca:"Genérico",modelo:"",caract:"Compatible con termostatos digitales PID de cámara fría",prov:"",obs:""},
+  {nombre:"Interruptor seccionador de corte para AC (caja estanca)",categoria:"HVAC",marca:"Genérico",modelo:"",caract:"IP55, corte visible, para desconectar la unidad exterior sin ir al tablero",prov:"",obs:""},
+  {nombre:"Cable tipo taller multiconductor 4x1,5mm² p/interconexión AC (m)",categoria:"HVAC",marca:"Genérico",modelo:"4x1,5mm²",caract:"Para interconexión unidad interior/exterior en equipos split e inverter",prov:"",obs:""},
 
   // ══════════════════════════════════════
   // BASTIDORES Y TAPAS — línea Cambre Siglo XXI/XXII (búsqueda verificada contra catálogo oficial Cambre y distribuidores, 2026)
