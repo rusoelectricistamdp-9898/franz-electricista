@@ -101,6 +101,13 @@ async function cargarDesdeNube() {
       }
     });
 
+    // El catálogo de materiales se siembra local UNA sola vez, y recién acá,
+    // después de haber consultado la nube — así se evita la condición de
+    // carrera que generaba catálogos con IDs distintos entre dispositivos.
+    if ((!DB.materiales || DB.materiales.length === 0) && typeof cargarCatalogoInicial === "function") {
+      cargarCatalogoInicial();
+    }
+
     if (huboCambios) {
       mostrarToastSync("✅ Datos actualizados desde la nube", "verde");
       actualizarDashboard(); mostrarClientes(); mostrarObras(); mostrarMateriales();
@@ -111,6 +118,11 @@ async function cargarDesdeNube() {
     actualizarIconoSync(true);
   } catch(e) {
     console.warn(e);
+    // Sin conexión: si es la primera vez que se usa este dispositivo y no hay
+    // nada local, sembramos el catálogo igual para que la app sea usable offline.
+    if ((!DB.materiales || DB.materiales.length === 0) && typeof cargarCatalogoInicial === "function") {
+      cargarCatalogoInicial();
+    }
     mostrarToastSync("📱 Modo offline — datos locales", "yellow");
     actualizarIconoSync(false);
   }
