@@ -438,8 +438,8 @@ const ACTIVIDADES=[
   {id:"tablero_mono",ico:"📦",nombre:"Tablero monofásico",mats:["Gabinete DIN 12 módulos embutir","Interruptor diferencial 2P 40A 30mA - Schneider","Interruptor termomagnético 1P 16A curva C - Schneider Acti9","Interruptor termomagnético 1P 20A curva C - Schneider Acti9","Interruptor termomagnético 1P 10A curva C - Schneider Acti9","Riel DIN 35mm (barra 2m)","Peine unifilar 6 módulos","Barra de neutros 10 posiciones","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Terminal tubular 2,5mm²","Bornera de paso 2,5mm² (unidad)","Canaleta ranurada para tablero 40x40mm"]},
   {id:"tablero_tri",ico:"⚡⚡",nombre:"Tablero trifásico",mats:["Gabinete DIN 24 módulos embutir","Interruptor diferencial 4P 63A 30mA - Schneider","Interruptor termomagnético 2P 25A curva C - Schneider Acti9 (general)","Interruptor termomagnético 3P 25A curva C - Schneider Acti9","Interruptor termomagnético 3P 32A curva C - Schneider Acti9","Riel DIN 35mm (barra 2m)","Peine trifásico 6 módulos","Barra de neutros 20 posiciones","Cable unipolar 6mm² Negro","Cable unipolar 6mm² Celeste","Cable unipolar 6mm² Verde/Amarillo","Terminal tubular 6mm²","Voltímetro digital de tablero 96x96","Amperímetro digital de tablero 96x96","Transformador de corriente (TI) 100/5A"]},
   {id:"pat",ico:"🌎",nombre:"Puesta a tierra",mats:["Jabalina copperweld 1,5m 5/8\"","Caja de inspección PAT 20x20cm","Grampa jabalina bronce 5/8\"","Cable desnudo cobre 16mm² (PAT)","Barra equipotencial de cobre 12 bornes","Gel conductor para jabalina","Soldadura exotérmica cartucho 90g","Bentonita conductiva (bolsa 5kg)","Cinta aisladora 3M Scotch 33","Conector bimetálico Cu/Al"]},
-  {id:"iluminacion",ico:"💡",nombre:"Iluminación",mats:["Caja octogonal PVC embutir","Cable unipolar 1,5mm² Negro","Cable unipolar 1,5mm² Celeste","Cable unipolar 1,5mm² Verde/Amarillo","Llave simple 1 punto - Cambre Siglo XXII","Llave combinación 2 puntos - Cambre Siglo XXII","Placa 1 módulo - Cambre Siglo XXII","Panel LED embutir redondo 12W","Panel LED embutir redondo 18W","Sensor de movimiento PIR embutir","Sensor crepuscular fotocélula","Wago 3 entradas 2,5mm²","Cinta aisladora 3M Scotch 33"]},
-  {id:"tomas",ico:"🔌",nombre:"Tomas y llaves",mats:["Caja rectangular PVC embutir","Toma 2P+T 10A embutir - Cambre Siglo XXII","Toma 2P+T 20A embutir - Cambre Siglo XXII","Placa 1 módulo - Cambre Siglo XXII","Placa 2 módulos - Cambre Siglo XXII","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Wago 3 entradas 2,5mm²","Toma USB doble embutir","Cinta aisladora 3M Scotch 33"]},
+  {id:"iluminacion",ico:"💡",nombre:"Iluminación",mats:["Caja octogonal PVC embutir","Caja octogonal PVC exterior (a la vista)","Cable unipolar 1,5mm² Negro","Cable unipolar 1,5mm² Celeste","Cable unipolar 1,5mm² Verde/Amarillo","Llave simple 1 punto - Cambre Siglo XXII","Bastidor Mignón 5x5 (1 módulo)","Tapa mignón 1 módulo","Llave combinación 2 puntos - Cambre Siglo XXII","Bastidor 5x10 (2 módulos)","Tapa 2 módulos","Panel LED embutir redondo 12W","Panel LED embutir redondo 18W","Aplique LED exterior IP65","Sensor de movimiento PIR embutir","Sensor de movimiento PIR exterior IP54","Sensor crepuscular fotocélula","Wago 3 entradas 2,5mm²","Cinta aisladora 3M Scotch 33"]},
+  {id:"tomas",ico:"🔌",nombre:"Tomas y llaves",mats:["Caja rectangular PVC embutir","Caja rectangular PVC exterior (a la vista)","Toma 2P+T 10A embutir - Cambre Siglo XXII","Toma 2P+T 20A embutir - Cambre Siglo XXII","Bastidor 5x10 (2 módulos)","Tapa 2 módulos","Tapa y bastidor intemperie 4 módulos IP55","Cable unipolar 2,5mm² Negro","Cable unipolar 2,5mm² Celeste","Cable unipolar 2,5mm² Verde/Amarillo","Wago 3 entradas 2,5mm²","Toma USB doble embutir","Cinta aisladora 3M Scotch 33"]},
   {id:"acometida",ico:"🏗",nombre:"Acometida / pilar",mats:["Caja de inspección PAT 30x30cm","Caño PVC rígido 50mm (barra 3m)","Conector recto PVC 50mm","Jabalina copperweld 1,5m 5/8\"","Grampa jabalina bronce 5/8\"","Cable unipolar 10mm² Negro","Cable unipolar 10mm² Celeste","Cable desnudo cobre 16mm² (PAT)","Base portafusible NH tamaño 00 tripolar","Fusible NH tamaño 00 25A","Cinta aisladora 3M Scotch 33"]},
   {id:"refrigeracion",ico:"❄",nombre:"Refrigeración",mats:["Contactor 9A 220V para compresor","Relé térmico 4-6A para compresor","Termostato digital PID cámara fría","Temporizador de descongelamiento electromecánico","Capacitor de marcha 30µF 440V","Capacitor de arranque 200µF 250V","Protector térmico Klixon compresor","Presostato de alta y baja combinado","Válvula solenoide refrigeración 220V","Caja estanca IP65 2 bocas","Toma estanca IP66 2P+T 10A exterior","Cable flexible 3x2,5mm² p/AC","Canalización flexible armada para AC 1/2\""]},
   {id:"hvac",ico:"🌡",nombre:"Aire acondicionado",mats:["Placa control aire acondicionado split 9000BTU (genérica)","Capacitor para motor de aire acondicionado 35µF","Contactor para condensadora AC 25A","Termostato de ambiente digital","Sensor de temperatura NTC para AC","Cable flexible 3x2,5mm² p/AC","Canalización flexible armada para AC 1/2\"","Soporte de pared para condensadora AC","Base antivibratoria para condensadora AC"]},
@@ -630,14 +630,25 @@ function mostrarPresupuestos(){
   if(!DB.presupuestos.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin presupuestos.</p>`;return;}
   cont.innerHTML=DB.presupuestos.map(p=>`<div class="item"><div class="item-row">
     <div><b>${p.cliente}</b>${p.obra?" — "+p.obra:""}<br>
-    <small>📅 ${p.fecha} | ${p.items.length} ítems | <b style="color:var(--verde)">${fmt(p.total)}</b></small></div>
+    <small>📅 ${p.fecha} | ${p.items.length} ítems</small>
+    <span class="monto-total">${fmt(p.total)}</span></div>
     <div class="item-actions">
       <button class="btn btn-outline btn-sm" onclick="exportarPresPDFById('${p.id}')">📄</button>
       <button class="btn btn-outline btn-sm" style="border-color:var(--yellow);color:var(--yellow)" onclick="exportarPresInternoPDFById('${p.id}')">🔒</button>
       <button class="btn btn-outline btn-sm" onclick="exportarPresWAById('${p.id}')">💬</button>
+      <button class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan)" onclick="pasarPresupuestoACompras('${p.id}')" title="Pedir estos materiales">🛒</button>
       <button class="btn btn-verde btn-sm" onclick="generarFacturaDesdePresupuesto('${p.id}')">🧾</button>
       <button class="btn btn-red btn-sm" onclick="eliminarPresupuesto('${p.id}')">✕</button>
     </div></div></div>`).join("");
+}
+function pasarPresupuestoACompras(id){
+  const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
+  const items=[...(p.items||[]), ...(p.componentes||[])];
+  if(!items.length){ toast("Este presupuesto no tiene materiales cargados","red"); return; }
+  items.forEach(i=>{ DB.compras.push({id:uid(), nombre:i.nombre, cant:i.cant, prov:"", fecha:hoy()}); });
+  guardarDB("compras");
+  ir("compras");
+  toast(`${items.length} materiales de "${p.cliente}" agregados a la lista de compras`);
 }
 // ══════════════════════════════════════
 // MEMBRETE PROFESIONAL PARA PDFs (presupuestos y facturas)
@@ -694,27 +705,54 @@ const ESTILOS_PDF = `
   .estado-chip{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;color:#fff}
 `;
 
-function genPDFPres(p){
+function modoExportElegido(){
+  const sel=get("pres-modo-export");
+  return (sel?sel.value:localStorage.getItem("franz-modo-export")) || "desglosado";
+}
+
+function genPDFPres(p, modo){
+  modo = modo || "desglosado";
   const componentes=p.componentes||[];
   const adicionales=p.adicionales||[];
-  const filasMat=p.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
-    <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
-    <td style="text-align:right">${fmt(item.precio)}</td>
-    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
-  const filasComp=componentes.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
-    <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
-    <td style="text-align:right">${fmt(item.precio)}</td>
-    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
-  const filasAdic=adicionales.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
-    <td colspan="3">${item.concepto}</td>
-    <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.importe)}</td></tr>`).join("");
   const totalMat=p.items.reduce((s,i)=>s+i.cant*i.precio,0);
   const totalComp=componentes.reduce((s,i)=>s+i.cant*i.precio,0);
   const totalAdic=adicionales.reduce((s,i)=>s+i.importe,0);
   const numero = "P-"+String(p.id||"").slice(-5).toUpperCase();
-  const seccion=(titulo,filas)=>filas?`<div class="doc-titulo" style="font-size:12px;margin:16px 0 6px">${titulo}</div>
-    <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
-    <tbody>${filas}</tbody></table>`:"";
+
+  let cuerpo;
+  if(modo==="final"){
+    // Modo "solo precio final": una sola línea con el trabajo, sin desglosar materiales/componentes
+    cuerpo=`<table><thead><tr><th>Descripción</th><th style="text-align:right">Importe</th></tr></thead>
+      <tbody><tr><td>${p.obra||"Instalación eléctrica completa"}</td>
+      <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(p.total)}</td></tr></tbody></table>`;
+  } else {
+    const filasMat=p.items.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+      <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+      <td style="text-align:right">${fmt(item.precio)}</td>
+      <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
+    const filasComp=componentes.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+      <td>${item.nombre}</td><td style="text-align:center">${item.cant}</td>
+      <td style="text-align:right">${fmt(item.precio)}</td>
+      <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.cant*item.precio)}</td></tr>`).join("");
+    const filasAdic=adicionales.map((item,i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}">
+      <td colspan="3">${item.concepto}</td>
+      <td style="text-align:right;font-weight:600;color:#16a34a">${fmt(item.importe)}</td></tr>`).join("");
+    const seccion=(titulo,filas)=>filas?`<div class="doc-titulo" style="font-size:12px;margin:16px 0 6px">${titulo}</div>
+      <table><thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+      <tbody>${filas}</tbody></table>`:"";
+    cuerpo=`${seccion("1. MATERIALES", filasMat)}${seccion("2. COMPONENTES / PROTECCIONES", filasComp)}${seccion("4. ADICIONALES", filasAdic)}`;
+  }
+
+  const totalesHTML = modo==="final"
+    ? `<div class="totales"><div class="fila final"><span>TOTAL</span><span>${fmt(p.total)}</span></div></div>`
+    : `<div class="totales">
+        <div class="fila"><span>Materiales</span><span>${fmt(totalMat)}</span></div>
+        <div class="fila"><span>Componentes</span><span>${fmt(totalComp)}</span></div>
+        <div class="fila"><span>Mano de obra</span><span>${fmt(p.mo||0)}</span></div>
+        <div class="fila"><span>Adicionales</span><span>${fmt(totalAdic)}</span></div>
+        <div class="fila final"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
+      </div>`;
+
   const html=`<html><head><meta charset="UTF-8"><title>Presupuesto ${numero}</title><style>${ESTILOS_PDF}</style></head><body>
     ${membretePDF()}
     <div class="doc-head">
@@ -723,16 +761,8 @@ function genPDFPres(p){
     <div class="datos-box">
       <b>Cliente:</b> ${p.cliente}${p.obra?` &nbsp;·&nbsp; <b>Obra:</b> ${p.obra}`:""}
     </div>
-    ${seccion("1. MATERIALES", filasMat)}
-    ${seccion("2. COMPONENTES / PROTECCIONES", filasComp)}
-    ${seccion("4. ADICIONALES", filasAdic)}
-    <div class="totales">
-      <div class="fila"><span>Materiales</span><span>${fmt(totalMat)}</span></div>
-      <div class="fila"><span>Componentes</span><span>${fmt(totalComp)}</span></div>
-      <div class="fila"><span>Mano de obra</span><span>${fmt(p.mo||0)}</span></div>
-      <div class="fila"><span>Adicionales</span><span>${fmt(totalAdic)}</span></div>
-      <div class="fila final"><span>TOTAL</span><span>${fmt(p.total)}</span></div>
-    </div>
+    ${cuerpo}
+    ${totalesHTML}
     <div class="terminos">Presupuesto elaborado conforme a normativa AEA 90364 e IRAM vigente. Precios sujetos a variación según cotización de materiales. Validez: 15 días desde la fecha de emisión.</div>
     ${creditoAppPDF()}
   </body></html>`;
@@ -749,9 +779,9 @@ function exportarPresPDF(){
     cliente:val("pres-cliente"),obra:val("pres-obra"),
     items:presItemsActual,componentes:presComponentesActual,adicionales:presAdicionalesActual,
     mo,total:totalMat+totalComp+mo+totalAdic,fecha:hoy()
-  });
+  }, modoExportElegido());
 }
-function exportarPresPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPres(p); }
+function exportarPresPDFById(id){ const p=DB.presupuestos.find(x=>x.id===id); if(p) genPDFPres(p, modoExportElegido()); }
 
 // ══════════════════════════════════════
 // PRESUPUESTO INTERNO — con costo y margen, NUNCA se le manda al cliente
@@ -867,7 +897,8 @@ function mostrarFacturas(){
   const badgeEstado=e=>e==="Pagada"?'<span class="badge badge-green">PAGADA</span>':'<span class="badge badge-yellow">PENDIENTE</span>';
   cont.innerHTML=[...DB.facturas].reverse().map(f=>`<div class="item"><div class="item-row">
     <div><b>${escapeHtml(f.numero)}</b> — ${escapeHtml(f.cliente)} ${badgeEstado(f.estado)}<br>
-    <small>${escapeHtml(f.concepto)||"—"} | 📅 ${f.fecha} | <b style="color:var(--verde)">${fmt(f.total)}</b> (${escapeHtml(f.metodo)})</small>
+    <small>${escapeHtml(f.concepto)||"—"} | 📅 ${f.fecha} | ${escapeHtml(f.metodo)}</small>
+    <span class="monto-total">${fmt(f.total)}</span>
     ${f.fechaPago?`<br><small style="color:var(--muted2)">💰 Pagada el ${f.fechaPago}</small>`:""}
     </div>
     <div class="item-actions">
@@ -946,6 +977,7 @@ async function exportarPresCSV(){
   ws.getCell('A5').font={size:10,color:{argb:'FF0F172A'}};
 
   let r=7;
+  const modo=modoExportElegido();
 
   function seccion(titulo, items, esAdicional){
     ws.mergeCells(`A${r}:D${r}`);
@@ -977,32 +1009,44 @@ async function exportarPresCSV(){
     r++;
   }
 
-  if(presItemsActual.length) seccion("1. MATERIALES", presItemsActual, false);
-  if(presComponentesActual.length) seccion("2. COMPONENTES / PROTECCIONES", presComponentesActual, false);
-  if(presAdicionalesActual.length) seccion("4. ADICIONALES", presAdicionalesActual, true);
-
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
   const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
 
-  ws.getCell(`C${r}`).value="Materiales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
-  ws.getCell(`D${r}`).value=totalMat; ws.getCell(`D${r}`).numFmt='"$"#,##0';
-  r++;
-  ws.getCell(`C${r}`).value="Componentes"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
-  ws.getCell(`D${r}`).value=totalComp; ws.getCell(`D${r}`).numFmt='"$"#,##0';
-  r++;
-  ws.getCell(`C${r}`).value="Mano de obra"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
-  ws.getCell(`D${r}`).value=mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
-  r++;
-  ws.getCell(`C${r}`).value="Adicionales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
-  ws.getCell(`D${r}`).value=totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
-  r++;
-  ws.getCell(`C${r}`).value="TOTAL"; ws.getCell(`C${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
-  ws.getCell(`D${r}`).value=totalMat+totalComp+mo+totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
-  ws.getCell(`D${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
-  ws.getCell(`C${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
-  ws.getCell(`D${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+  if(modo==="final"){
+    seccion("PRESUPUESTO", [{nombre:val("pres-obra")||"Instalación eléctrica completa", cant:1, precio:totalMat+totalComp+mo+totalAdic}], false);
+  } else {
+    if(presItemsActual.length) seccion("1. MATERIALES", presItemsActual, false);
+    if(presComponentesActual.length) seccion("2. COMPONENTES / PROTECCIONES", presComponentesActual, false);
+    if(presAdicionalesActual.length) seccion("4. ADICIONALES", presAdicionalesActual, true);
+  }
+
+  if(modo==="final"){
+    ws.getCell(`C${r}`).value="TOTAL"; ws.getCell(`C${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+    ws.getCell(`D${r}`).value=totalMat+totalComp+mo+totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    ws.getCell(`D${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+    ws.getCell(`C${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+    ws.getCell(`D${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+  } else {
+    ws.getCell(`C${r}`).value="Materiales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+    ws.getCell(`D${r}`).value=totalMat; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    r++;
+    ws.getCell(`C${r}`).value="Componentes"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+    ws.getCell(`D${r}`).value=totalComp; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    r++;
+    ws.getCell(`C${r}`).value="Mano de obra"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+    ws.getCell(`D${r}`).value=mo; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    r++;
+    ws.getCell(`C${r}`).value="Adicionales"; ws.getCell(`C${r}`).font={size:10,color:{argb:'FF64748B'}};
+    ws.getCell(`D${r}`).value=totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    r++;
+    ws.getCell(`C${r}`).value="TOTAL"; ws.getCell(`C${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+    ws.getCell(`D${r}`).value=totalMat+totalComp+mo+totalAdic; ws.getCell(`D${r}`).numFmt='"$"#,##0';
+    ws.getCell(`D${r}`).font={bold:true,size:12,color:{argb:'FF16A34A'}};
+    ws.getCell(`C${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+    ws.getCell(`D${r}`).border={top:{style:'medium',color:{argb:'FF16A34A'}}};
+  }
 
   if(!esPro()){
     r+=2;
@@ -1020,36 +1064,70 @@ async function exportarPresCSV(){
   a.click(); URL.revokeObjectURL(url);
 }
 function exportarPresWA(){
-  const lista=presItemsActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  const listaComp=presComponentesActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  const listaAdic=presAdicionalesActual.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
   const totalMat=presItemsActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const totalComp=presComponentesActual.reduce((s,i)=>s+i.cant*i.precio,0);
   const mo=parseFloat(val("pres-mo"))||0;
   const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
   const total=totalMat+totalComp+mo+totalAdic;
   let msg=`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${val("pres-cliente")}\nFecha: ${hoy()}\n\n`;
-  if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
-  if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
-  if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
-  msg+=`MO: ${fmt(mo)}\n*TOTAL: ${fmt(total)}*`;
+  if(modoExportElegido()==="final"){
+    msg+=`${val("pres-obra")||"Instalación eléctrica completa"}\n\n*TOTAL: ${fmt(total)}*`;
+  } else {
+    const lista=presItemsActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+    const listaComp=presComponentesActual.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+    const listaAdic=presAdicionalesActual.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
+    if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
+    if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
+    if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
+    msg+=`MO: ${fmt(mo)}\n*TOTAL: ${fmt(total)}*`;
+  }
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 function exportarPresWAById(id){
   const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
   const componentes=p.componentes||[], adicionales=p.adicionales||[];
-  const lista=p.items.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  const listaComp=componentes.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
-  const listaAdic=adicionales.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
   let msg=`⚡ *PRESUPUESTO FRANZ ELECTRICIDAD*\nCliente: ${p.cliente}\nFecha: ${p.fecha}\n\n`;
-  if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
-  if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
-  if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
-  msg+=`MO: ${fmt(p.mo||0)}\n*TOTAL: ${fmt(p.total)}*`;
+  if(modoExportElegido()==="final"){
+    msg+=`${p.obra||"Instalación eléctrica completa"}\n\n*TOTAL: ${fmt(p.total)}*`;
+  } else {
+    const lista=p.items.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+    const listaComp=componentes.map(i=>`• ${i.nombre} x${i.cant}: ${fmt(i.cant*i.precio)}`).join("\n");
+    const listaAdic=adicionales.map(i=>`• ${i.concepto}: ${fmt(i.importe)}`).join("\n");
+    if(lista) msg+=`*MATERIALES*\n${lista}\n\n`;
+    if(listaComp) msg+=`*COMPONENTES*\n${listaComp}\n\n`;
+    if(listaAdic) msg+=`*ADICIONALES*\n${listaAdic}\n\n`;
+    msg+=`MO: ${fmt(p.mo||0)}\n*TOTAL: ${fmt(p.total)}*`;
+  }
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 // RELEVAMIENTO
+// ══════════════════════════════════════
+// CASILLAS CON RAYO ⚡ — reemplazo genérico de checkboxes nativos,
+// reutilizable en cualquier parte de la app (Relevamiento, Omisiones, etc.)
+// ══════════════════════════════════════
+let casillasRayo={};
+function toggleCasillaRayo(nombre){
+  const box=get(`chk-box-${nombre}`), row=get(`chk-row-${nombre}`);
+  if(!box||!row) return;
+  const marcada=!!casillasRayo[nombre];
+  casillasRayo[nombre]=!marcada;
+  if(marcada){
+    box.style.background="transparent"; box.style.borderColor="var(--muted2)"; box.innerHTML="";
+    row.style.borderColor="var(--border)";
+  } else {
+    box.style.background="var(--verde)"; box.style.borderColor="var(--verde)"; box.innerHTML="⚡";
+    row.style.borderColor="var(--verde)";
+  }
+}
+function esCasillaMarcada(nombre){ return !!casillasRayo[nombre]; }
+function limpiarCasillaRayo(nombre){
+  casillasRayo[nombre]=false;
+  const box=get(`chk-box-${nombre}`), row=get(`chk-row-${nombre}`);
+  if(box){ box.style.background="transparent"; box.style.borderColor="var(--muted2)"; box.innerHTML=""; }
+  if(row){ row.style.borderColor="var(--border)"; }
+}
+
 async function guardarRelevamiento(){
   const cliente=val("rel-cliente");
   if(!cliente){toast("Cliente obligatorio","red");return;}
@@ -1057,11 +1135,12 @@ async function guardarRelevamiento(){
   DB.relevamientos.push({id,cliente,dir:val("rel-dir"),tipo:val("rel-tipo"),
     gabinete:val("rel-gabinete"),diferencial:val("rel-diferencial"),
     termicas:val("rel-termicas"),pat:val("rel-pat"),
-    aea:get("rel-aea")?.checked||false,interv:get("rel-interv")?.checked||false,
+    aea:esCasillaMarcada("rel-aea"),interv:esCasillaMarcada("rel-interv"),
     obs:val("rel-obs"),fecha:hoy()});
   guardarDB("relevamientos");
   await confirmarFotosPendientes("rel","relevamiento",id,"hallazgo");
   limpiarFotosPendientes("rel","rel-fotos-preview");
+  limpiarCasillaRayo("rel-aea"); limpiarCasillaRayo("rel-interv");
   mostrarRelevamientos(); toast("Relevamiento guardado");
 }
 function generarDiagnostico(){
@@ -1070,8 +1149,8 @@ function generarDiagnostico(){
   if(val("rel-pat")==="No posee") txt+=`• <b>⚠ CRÍTICO:</b> Ausencia de PAT. Incumplimiento AEA 90364.<br>`;
   if(val("rel-gabinete")==="Malo") txt+=`• Gabinete deficiente. Se recomienda reemplazo urgente.<br>`;
   if(val("rel-termicas")==="Malo") txt+=`• Térmicas deficientes. Requieren evaluación.<br>`;
-  if(!get("rel-aea")?.checked) txt+=`• No cumple criterios AEA 90364 verificados.<br>`;
-  if(get("rel-interv")?.checked) txt+=`• Intervenciones previas por terceros detectadas.<br>`;
+  if(!esCasillaMarcada("rel-aea")) txt+=`• No cumple criterios AEA 90364 verificados.<br>`;
+  if(esCasillaMarcada("rel-interv")) txt+=`• Intervenciones previas por terceros detectadas.<br>`;
   if(!txt) txt="✅ No se detectaron anomalías relevantes.";
   const el=get("rel-diagnostico"); el.innerHTML=txt; el.style.display="block";
   el.scrollIntoView({behavior:"smooth"});
@@ -1105,7 +1184,7 @@ function mostrarRelevamientos(){
 // CALCULADORAS AEA
 function tabCalc(el,id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on")); el.classList.add("on");
-  ["calc-canio","calc-tension","calc-cable","calc-motor","calc-pat","calc-materiales"].forEach(c=>{
+  ["calc-canio","calc-tension","calc-cable","calc-motor","calc-pat","calc-materiales","calc-cargas"].forEach(c=>{
     const e=get(c); if(e) e.style.display=c===id?"block":"none";
   });
 }
@@ -1315,6 +1394,62 @@ function pasarCalculoACompras(){
   guardarDB("compras"); ir("compras"); toast("Materiales agregados a compras");
 }
 
+// ══════════════════════════════════════
+// CÓMPUTO DE CARGAS — consumo total, corriente y conductor principal
+// ══════════════════════════════════════
+let cargasElectricas=[];
+function agregarCargaElectrica(){
+  const nombre=val("carga-nombre"), pot=parseFloat(val("carga-pot"))||0, cant=parseInt(val("carga-cant"))||1;
+  if(!nombre||!pot){toast("Completá el nombre y la potencia","red");return;}
+  cargasElectricas.push({nombre,pot,cant});
+  const eNom=get("carga-nombre"), ePot=get("carga-pot"), eCant=get("carga-cant");
+  if(eNom) eNom.value=""; if(ePot) ePot.value=""; if(eCant) eCant.value="1";
+  renderCargasElectricas();
+}
+function quitarCargaElectrica(i){ cargasElectricas.splice(i,1); renderCargasElectricas(); }
+function renderCargasElectricas(){
+  const cont=get("carga-lista"); if(!cont) return;
+  if(!cargasElectricas.length){cont.innerHTML="";return;}
+  cont.innerHTML=cargasElectricas.map((c,i)=>`<div class="item"><div class="item-row">
+    <div>${c.cant} × ${c.nombre} — ${c.pot.toLocaleString("es-AR")}W c/u <b style="color:var(--verde)">(${(c.pot*c.cant).toLocaleString("es-AR")}W total)</b></div>
+    <button class="btn btn-red btn-sm" onclick="quitarCargaElectrica(${i})">✕</button>
+    </div></div>`).join("");
+}
+function calcularCargasElectricas(){
+  const el=get("carga-resultado");
+  if(!cargasElectricas.length){el.innerHTML="⚠ Agregá al menos un equipo a la lista";el.style.display="block";return;}
+
+  const sistema=val("carga-sistema"), fp=parseFloat(val("carga-fp"))||0.9;
+  const V=sistema==="mono"?220:380;
+  const potenciaTotal=cargasElectricas.reduce((s,c)=>s+c.pot*c.cant,0);
+  const corriente=sistema==="mono" ? potenciaTotal/(V*fp) : potenciaTotal/(V*fp*1.732);
+
+  const secciones=[1.5,2.5,4,6,10,16,25,35,50,70,95];
+  const Iadm={1.5:15,2.5:20,4:26,6:35,10:50,16:65,25:85,35:105,50:130,70:165,95:200};
+  const seccionRecomendada=secciones.find(s=>Iadm[s]>=corriente)||95;
+
+  const breakersEstandar=[6,10,16,20,25,32,40,50,63,80,100,125];
+  const proteccionRecomendada=breakersEstandar.find(b=>b>=corriente)||125;
+
+  const detalle=cargasElectricas.map(c=>`<div>${c.cant} × ${c.nombre}: ${(c.pot*c.cant).toLocaleString("es-AR")}W</div>`).join("");
+
+  el.innerHTML=`
+    <div style="margin-bottom:10px;font-size:.85em">${detalle}</div>
+    <div style="font-size:1.05em;font-weight:700">Potencia instalada total: ${(potenciaTotal/1000).toFixed(2)}kW (${potenciaTotal.toLocaleString("es-AR")}W)</div>
+    <div style="margin-top:4px;font-size:1.05em;font-weight:700">Corriente total: ${corriente.toFixed(1)}A</div>
+    <div style="margin-top:10px;font-size:1.15em;font-weight:900;color:var(--verde)">✅ Conductor principal recomendado: ${seccionRecomendada}mm² (Iadm ${Iadm[seccionRecomendada]}A)</div>
+    <div style="margin-top:4px;font-size:.95em">Protección termomagnética sugerida: <b>${proteccionRecomendada}A</b></div>
+    <div style="margin-top:10px;font-size:.75em;color:var(--muted2)">
+      Este cálculo suma el 100% de la potencia de todos los equipos cargados, sin aplicar factor de simultaneidad/demanda —
+      así el resultado nunca queda corto, aunque en una instalación grande donde no todo funciona al mismo tiempo,
+      un profesional puede ajustar la sección con un factor de demanda de la AEA 90364 según su criterio.
+      Verificá también la caída de tensión en la calculadora correspondiente si el recorrido es largo.
+    </div>
+  `;
+  el.style.display="block";
+}
+
+
 // OMISIONES
 const CHECKLISTS={
   residencial:["Diferencial 30mA instalado y operativo","PAT (jabalina+caja inspección) presente","Protecciones bipolares en todos los circuitos","Separación iluminación/tomas/fuerza","Cañerías AEA (20/25mm, curvas, conectores)","Cajas rectangulares/octogonales en cada boca","Conductores con colores normalizados AEA","Tablero con gabinete adecuado","Conexión a tierra de masas metálicas","Circuito cocina independiente 20A"],
@@ -1514,10 +1649,88 @@ function descargarCSV(csv,nombre){
   URL.revokeObjectURL(url);
 }
 
+// ══════════════════════════════════════
+// TARIFARIO DE REFERENCIA — AAIERIC (Costos Sugeridos de Mano de Obra)
+// Fuente: aaieric.org.ar/costos-mano-de-obra · Julio 2026 · aplicable oficialmente a CABA/GBA.
+// Esto NO se actualiza solo desde la web (una app no puede leer otros sitios
+// por seguridad del navegador) — es una referencia que trajimos a mano.
+// Si pasó mucho tiempo desde julio 2026, conviene verificar en la fuente.
+// ══════════════════════════════════════
+const TARIFARIO_AAIERIC = {
+  fecha: "Julio 2026",
+  fuente: "AAIERIC — aaieric.org.ar/costos-mano-de-obra",
+  items: [
+    {nombre:"Visita / diagnóstico / presupuesto", valor:54310},
+    {nombre:"Hora de trabajo (mínimo)", valor:54310},
+    {nombre:"Boca completa (canalización + cableado + conexión)", valor:108431},
+    {nombre:"Urgencia (noche / feriado, mínimo)", valor:130203},
+    {nombre:"Tablero Principal monofásico (1 ID + 1 TM + PAT)", valor:320310},
+    {nombre:"Tablero Principal trifásico (1 ID + 1 TM + PAT)", valor:433760},
+    {nombre:"Tablero seccional hasta 8 polos", valor:227652},
+    {nombre:"PAT de servicio (jabalina + caja de inspección)", valor:162585},
+    {nombre:"Protocolo de puesta a tierra (SRT 900/15)", valor:636071},
+    {nombre:"Jornal 8hs — Oficial Especializado", valor:49514},
+    {nombre:"Jornal 8hs — Oficial Electricista", valor:42354},
+    {nombre:"Jornal 8hs — Medio Oficial Electricista", valor:39140},
+    {nombre:"Jornal 8hs — Ayudante", valor:36027},
+  ]
+};
+function abrirTarifarioAAIERIC(){
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.innerHTML=`
+    <div class="modal-box" style="max-width:540px">
+      <h3 style="margin-bottom:4px">📋 Tarifario de referencia — AAIERIC</h3>
+      <p style="color:var(--muted2);font-size:.78rem;margin-bottom:12px">
+        Costos sugeridos de mano de obra, ${TARIFARIO_AAIERIC.fecha}. Fuente: ${TARIFARIO_AAIERIC.fuente} —
+        valores oficiales para CABA/GBA. No se actualiza sola desde la web; si pasó mucho tiempo, conviene verificarlo en la fuente.
+        Los valores son editables: si te parece mucho o poco para tu caso, cambialo antes de tocar "Usar".
+      </p>
+      <div class="fld">
+        <label>Zona</label>
+        <select id="tarifario-zona" onchange="renderTarifarioAAIERIC()">
+          <option value="1">CABA / GBA (valor oficial AAIERIC)</option>
+          <option value="0.82">Interior de Buenos Aires y otras provincias (estimado, -18%)</option>
+        </select>
+      </div>
+      <div id="tarifario-lista" style="max-height:340px;overflow-y:auto;margin-top:10px"></div>
+      <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="this.closest('.modal-overlay').remove()">Cerrar</button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
+  renderTarifarioAAIERIC();
+}
+function renderTarifarioAAIERIC(){
+  const cont=get("tarifario-lista"); if(!cont) return;
+  const factor=parseFloat(get("tarifario-zona")?.value)||1;
+  cont.innerHTML=TARIFARIO_AAIERIC.items.map((item,i)=>{
+    const valor=Math.round(item.valor*factor);
+    return `<div class="item"><div class="item-row" style="align-items:center">
+      <div style="flex:1"><b style="font-size:.85rem">${item.nombre}</b></div>
+      <div class="item-actions" style="display:flex;align-items:center;gap:8px">
+        <input type="text" inputmode="numeric" id="tarifario-val-${i}" value="${valor.toLocaleString("es-AR")}"
+          style="width:120px;margin:0;padding:6px 8px;font-size:.85rem;text-align:right;color:var(--verde);font-weight:700;font-variant-numeric:tabular-nums"
+          onblur="this.value=(parseInt(this.value.replace(/[^0-9]/g,''))||0).toLocaleString('es-AR')">
+        <button class="btn btn-outline btn-sm" onclick="usarValorTarifario(${i})">Usar</button>
+      </div>
+    </div></div>`;
+  }).join("");
+}
+function usarValorTarifario(i){
+  const input=get(`tarifario-val-${i}`);
+  const valor=parseInt((input?.value||"").replace(/[^0-9]/g,""))||0;
+  const e=get("pres-mo");
+  if(e){ e.value=valor; actualizarTotalPres(); }
+  document.querySelector(".modal-overlay")?.remove();
+  toast("Mano de obra actualizada");
+}
+
 // INIT
 document.addEventListener("DOMContentLoaded",()=>{
-  if(typeof cargarCatalogoInicial==="function") cargarCatalogoInicial();
   const tema=localStorage.getItem("franz-tema"); if(tema) cambiarTema(tema);
   actualizarDashboard(); sincronizarSelectClientes(); iniciarPlantillas();
   const fd=get("ob-fecha"); if(fd&&!fd.value) fd.value=new Date().toISOString().split("T")[0];
+  const modoGuardado=localStorage.getItem("franz-modo-export");
+  const selModo=get("pres-modo-export");
+  if(modoGuardado && selModo) selModo.value=modoGuardado;
 });
