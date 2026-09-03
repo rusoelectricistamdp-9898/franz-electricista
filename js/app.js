@@ -42,6 +42,7 @@ function ir(id){
     if(b.getAttribute("onclick")?.includes(`'${id}'`)) b.classList.add("active");
   });
   if(window.innerWidth<=768) sbClose();
+  try{ sessionStorage.setItem("franz-ultima-pagina", id); }catch(e){}
   const fn={dashboard:actualizarDashboard,clientes:mostrarClientes,obras:mostrarObras,
     materiales:mostrarMateriales,componentes:mostrarComponentes,tableros:mostrarTableros,
     presupuestos:mostrarPresupuestos,facturas:mostrarFacturas,relevamiento:mostrarRelevamientos,
@@ -87,6 +88,34 @@ let DB={
   compras:      JSON.parse(localStorage.getItem("franz-compras"))      ||[],
   facturas:     JSON.parse(localStorage.getItem("franz-facturas"))     ||[],
 };
+const TABLAS_TODAS = ["clientes","obras","materiales","componentes","tableros","presupuestos","relevamientos","omisiones","compras","facturas"];
+
+// ══════════════════════════════════════
+// SEGURIDAD: evita que datos de una cuenta queden visibles al entrar con otra
+// en el mismo navegador. El almacenamiento local del navegador no sabe "de quién"
+// son los datos guardados — antes de mostrar nada, comparamos contra el email
+// que realmente inició sesión, y si no coincide, se borra todo lo local (los
+// datos reales de la cuenta nueva se vuelven a traer de la nube a continuación).
+// ══════════════════════════════════════
+function limpiarDatosLocalesSiOtroUsuario(email){
+  const emailGuardado = localStorage.getItem("franz-datos-email");
+  if (emailGuardado && emailGuardado !== email) {
+    TABLAS_TODAS.forEach(t=>{
+      localStorage.removeItem("franz-"+t);
+      DB[t] = [];
+    });
+    console.warn("Datos locales de otra cuenta detectados y borrados por seguridad.");
+  }
+  localStorage.setItem("franz-datos-email", email);
+}
+function limpiarTodosLosDatosLocales(){
+  TABLAS_TODAS.forEach(t=>{
+    localStorage.removeItem("franz-"+t);
+    DB[t] = [];
+  });
+  localStorage.removeItem("franz-datos-email");
+}
+
 function guardarDB(k){
   localStorage.setItem("franz-"+k,JSON.stringify(DB[k]));
   if(typeof syncPush==="function") syncPush(k);
@@ -220,7 +249,9 @@ function renderObras(lista){
 
 function abrirFinalizarObra(id){
   const o=DB.obras.find(x=>x.id===id); if(!o) return;
-  limpiarFotosPendientes("fin","fin-fotos-preview");
+  // No limpiamos acá: si había fotos pendientes de un intento anterior
+  // (por ejemplo, el navegador se recargó al volver de la cámara), las
+  // mostramos para que el usuario las vea recuperadas en vez de perderlas.
   const modal=document.createElement("div");
   modal.className="modal-overlay";
   modal.innerHTML=`
@@ -258,6 +289,7 @@ function abrirFinalizarObra(id){
     </div>`;
   document.body.appendChild(modal);
   initFirmaCanvas("fin-firma-canvas");
+  renderMiniaturasPendientes("fin","fin-fotos-preview");
   modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
 }
 async function guardarFinalizacionObra(id){
@@ -273,7 +305,7 @@ async function guardarFinalizacionObra(id){
   }
   guardarDB("obras");
   await confirmarFotosPendientes("fin","obra",id,"finalizacion");
-  limpiarFotosPendientes("fin","fin-fotos-preview");
+  await limpiarFotosPendientes("fin","fin-fotos-preview");
   document.querySelector(".modal-overlay")?.remove();
   mostrarObras(); actualizarDashboard();
   toast("Obra finalizada con evidencia guardada");
@@ -1139,7 +1171,7 @@ async function guardarRelevamiento(){
     obs:val("rel-obs"),fecha:hoy()});
   guardarDB("relevamientos");
   await confirmarFotosPendientes("rel","relevamiento",id,"hallazgo");
-  limpiarFotosPendientes("rel","rel-fotos-preview");
+  await limpiarFotosPendientes("rel","rel-fotos-preview");
   limpiarCasillaRayo("rel-aea"); limpiarCasillaRayo("rel-interv");
   mostrarRelevamientos(); toast("Relevamiento guardado");
 }
@@ -1175,10 +1207,64 @@ function mostrarRelevamientos(){
     </div>
     <div class="item-actions">
       <button class="btn btn-outline btn-sm btn-foto-galeria" id="rel-fotobtn-${r.id}" onclick="verGaleria('relevamiento','${r.id}','Fotos — ${escapeHtml(r.cliente)}')">📷…</button>
+      <button class="btn btn-outline btn-sm" onclick="exportarRelevamientoPDF('${r.id}')">📄</button>
       <button class="btn btn-red btn-sm" onclick="eliminarRelevamiento('${r.id}')">✕</button>
     </div>
     </div></div>`).join("");
   pintarBotonesFotos("relevamiento", DB.relevamientos.map(r=>r.id), "rel-fotobtn-");
+}
+
+// ══════════════════════════════════════
+// EXPORTAR RELEVAMIENTO A PDF — con diagnóstico y fotos incluidas
+// ══════════════════════════════════════
+async function exportarRelevamientoPDF(id){
+  const r=DB.relevamientos.find(x=>x.id===id); if(!r){toast("Relevamiento no encontrado","red");return;}
+
+  let fotos=[];
+  try{ fotos=await obtenerFotosDB("relevamiento",id); }
+  catch(e){ fotos=[]; }
+
+  let diagnostico="";
+  if(r.diferencial==="No posee") diagnostico+=`<div>⚠ <b>CRÍTICO:</b> Ausencia de protección diferencial. Riesgo de electrocución.</div>`;
+  if(r.pat==="No posee") diagnostico+=`<div>⚠ <b>CRÍTICO:</b> Ausencia de PAT. Incumplimiento AEA 90364.</div>`;
+  if(r.gabinete==="Malo") diagnostico+=`<div>Gabinete deficiente. Se recomienda reemplazo urgente.</div>`;
+  if(r.termicas==="Malo") diagnostico+=`<div>Térmicas deficientes. Requieren evaluación.</div>`;
+  if(!r.aea) diagnostico+=`<div>No cumple criterios AEA 90364 verificados.</div>`;
+  if(r.interv) diagnostico+=`<div>Intervenciones previas por terceros detectadas.</div>`;
+  if(!diagnostico) diagnostico=`<div>✅ No se detectaron anomalías relevantes.</div>`;
+
+  const fotosHTML = fotos.length ? `
+    <div class="doc-titulo" style="font-size:12px;margin:18px 0 8px">EVIDENCIA FOTOGRÁFICA (${fotos.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${fotos.map(f=>`<img src="${f.dataURL}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">`).join("")}
+    </div>` : `<div style="margin-top:16px;color:#94a3b8;font-size:10px">Sin fotos cargadas para este relevamiento.</div>`;
+
+  const html=`<html><head><meta charset="UTF-8"><title>Relevamiento ${escapeHtml(r.cliente)}</title><style>${ESTILOS_PDF}</style></head><body>
+    ${membretePDF()}
+    <div class="doc-head">
+      <div><div class="doc-titulo">RELEVAMIENTO TÉCNICO</div><div class="doc-num">${r.fecha}</div></div>
+    </div>
+    <div class="datos-box">
+      <b>Cliente:</b> ${escapeHtml(r.cliente)}${r.dir?` &nbsp;·&nbsp; <b>Dirección:</b> ${escapeHtml(r.dir)}`:""} &nbsp;·&nbsp; <b>Tipo:</b> ${escapeHtml(r.tipo)}
+    </div>
+    <table><thead><tr><th>Ítem</th><th>Estado</th></tr></thead><tbody>
+      <tr><td>Gabinete / tablero</td><td>${escapeHtml(r.gabinete)}</td></tr>
+      <tr><td>Diferencial</td><td>${escapeHtml(r.diferencial)}</td></tr>
+      <tr><td>Térmicas</td><td>${escapeHtml(r.termicas)}</td></tr>
+      <tr><td>PAT / Puesta a tierra</td><td>${escapeHtml(r.pat)}</td></tr>
+      <tr><td>Cumple AEA 90364</td><td>${r.aea?"Sí":"No"}</td></tr>
+      <tr><td>Intervenciones previas por terceros</td><td>${r.interv?"Sí":"No"}</td></tr>
+    </tbody></table>
+    ${r.obs?`<div class="datos-box" style="margin-top:14px"><b>Observaciones:</b> ${escapeHtml(r.obs)}</div>`:""}
+    <div class="doc-titulo" style="font-size:12px;margin:18px 0 6px">DIAGNÓSTICO</div>
+    <div class="datos-box">${diagnostico}</div>
+    ${fotosHTML}
+    <div class="terminos">Relevamiento realizado conforme a normativa AEA 90364 vigente. Este informe refleja el estado observado al momento de la inspección, no reemplaza una verificación reglamentaria formal.</div>
+    ${creditoAppPDF()}
+  </body></html>`;
+
+  const w=window.open("","_blank"); w.document.write(html); w.document.close();
+  setTimeout(()=>w.print(), 500);
 }
 
 // CALCULADORAS AEA
@@ -1733,4 +1819,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const modoGuardado=localStorage.getItem("franz-modo-export");
   const selModo=get("pres-modo-export");
   if(modoGuardado && selModo) selModo.value=modoGuardado;
+  // Si había fotos de un relevamiento a medio hacer (por ejemplo, el navegador
+  // se recargó al volver de la cámara), las mostramos recuperadas acá.
+  if(typeof renderMiniaturasPendientes==="function") renderMiniaturasPendientes("rel","rel-fotos-preview");
 });
