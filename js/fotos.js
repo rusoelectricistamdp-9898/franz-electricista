@@ -64,6 +64,28 @@ async function eliminarFotoDB(id){
   });
 }
 
+// Re-vincula una foto ya guardada (con id temporal) a su registro definitivo,
+// sin tener que volver a guardar la imagen — solo cambia a qué pertenece.
+async function actualizarRefFotoDB(id, nuevoRefTipo, nuevoRefId, nuevaEtiqueta){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTOS_STORE, "readwrite");
+    const store = tx.objectStore(FOTOS_STORE);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const item = getReq.result;
+      if (!item) { resolve(null); return; }
+      item.refTipo = nuevoRefTipo;
+      item.refId = nuevoRefId;
+      if (nuevaEtiqueta) item.etiqueta = nuevaEtiqueta;
+      store.put(item);
+    };
+    getReq.onerror = () => reject(getReq.error);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // Redimensiona y comprime una foto antes de guardarla (celulares suben fotos de 4-12MB)
 function comprimirImagen(file, maxDim=1280, calidad=0.72){
   return new Promise((resolve, reject) => {
@@ -89,64 +111,89 @@ function comprimirImagen(file, maxDim=1280, calidad=0.72){
   });
 }
 
-// ===== Buffers en memoria para fotos "pendientes de guardar" en un formulario =====
-const fotosPendientes = {};
+// ===== Fotos "pendientes de guardar" en un formulario =====
+// ANTES: vivían solo en un array en memoria y se perdían si el navegador
+// recargaba la página (por ejemplo, al volver de la cámara en el celular).
+// AHORA: se guardan de inmediato en el almacenamiento permanente del
+// dispositivo (IndexedDB), con un identificador temporal fijo por
+// formulario. Cuando el formulario se guarda de verdad, esas fotos se
+// "revinculan" al registro real — no hace falta volver a guardarlas.
+const REF_TEMP = {
+  rel: { tipo: "relevamiento_temp", id: "actual" },
+  fin: { tipo: "obra_temp", id: "actual" },
+};
 
 async function manejarSeleccionFotos(inputEl, bufferKey, previewContId){
-  if (!fotosPendientes[bufferKey]) fotosPendientes[bufferKey] = [];
   const files = Array.from(inputEl.files||[]);
   if (!files.length) return;
+  const ref = REF_TEMP[bufferKey];
   for (const f of files) {
     if (!f.type.startsWith("image/")) continue;
     try{
       const dataURL = await comprimirImagen(f);
-      fotosPendientes[bufferKey].push(dataURL);
+      if (ref) await guardarFotoDB(ref.tipo, ref.id, dataURL, "pendiente");
     }catch(e){ console.error(e); }
   }
   inputEl.value = "";
-  renderMiniaturasPendientes(bufferKey, previewContId);
+  await renderMiniaturasPendientes(bufferKey, previewContId);
 }
 
-function renderMiniaturasPendientes(bufferKey, contId){
+async function renderMiniaturasPendientes(bufferKey, contId){
   const cont = get(contId); if (!cont) return;
-  const arr = fotosPendientes[bufferKey]||[];
+  const ref = REF_TEMP[bufferKey];
+  let arr = [];
+  if (ref) { try{ arr = await obtenerFotosDB(ref.tipo, ref.id); }catch(e){ arr = []; } }
   if (!arr.length){ cont.innerHTML=""; cont.style.display="none"; return; }
   cont.style.display="flex";
-  cont.innerHTML = arr.map((src,i)=>`
+  cont.innerHTML = arr.map((item,i)=>`
     <div class="foto-mini">
-      <img src="${src}" onclick="verFotoUnica('${bufferKey}',${i})">
+      <img src="${item.dataURL}" onclick="verFotoUnica('${bufferKey}',${i})">
       <button type="button" class="foto-mini-x" onclick="quitarFotoPendiente('${bufferKey}',${i},'${contId}')">✕</button>
     </div>`).join("");
 }
 
-function quitarFotoPendiente(bufferKey, idx, contId){
-  fotosPendientes[bufferKey].splice(idx,1);
-  renderMiniaturasPendientes(bufferKey, contId);
+async function quitarFotoPendiente(bufferKey, idx, contId){
+  const ref = REF_TEMP[bufferKey];
+  if (ref) {
+    const arr = await obtenerFotosDB(ref.tipo, ref.id);
+    const foto = arr[idx];
+    if (foto) await eliminarFotoDB(foto.id);
+  }
+  await renderMiniaturasPendientes(bufferKey, contId);
 }
 
-function limpiarFotosPendientes(bufferKey, contId){
-  fotosPendientes[bufferKey] = [];
+async function limpiarFotosPendientes(bufferKey, contId){
+  const ref = REF_TEMP[bufferKey];
+  if (ref) {
+    const arr = await obtenerFotosDB(ref.tipo, ref.id);
+    for (const foto of arr) await eliminarFotoDB(foto.id);
+  }
   const cont = get(contId); if (cont){ cont.innerHTML=""; cont.style.display="none"; }
 }
 
-// Persiste las fotos pendientes de un buffer contra un registro ya guardado (refId)
+// Revincula las fotos ya guardadas (con el ID temporal) al registro recién
+// guardado (refId real) — no las vuelve a insertar, ya estaban guardadas.
 async function confirmarFotosPendientes(bufferKey, refTipo, refId, etiqueta){
-  const arr = fotosPendientes[bufferKey]||[];
+  const ref = REF_TEMP[bufferKey];
+  if (!ref) return;
   try{
-    for (const dataURL of arr) {
-      await guardarFotoDB(refTipo, refId, dataURL, etiqueta);
+    const arr = await obtenerFotosDB(ref.tipo, ref.id);
+    for (const foto of arr) {
+      await actualizarRefFotoDB(foto.id, refTipo, refId, etiqueta);
     }
   }catch(e){
-    console.error("No se pudieron guardar las fotos:", e);
-    if (typeof toast==="function") toast("El registro se guardó, pero las fotos no se pudieron almacenar en este navegador","yellow");
+    console.error("No se pudieron vincular las fotos al registro:", e);
+    if (typeof toast==="function") toast("El registro se guardó, pero hubo un problema al vincular las fotos","yellow");
   }
-  fotosPendientes[bufferKey] = [];
 }
 
-function verFotoUnica(bufferKey, idx){
-  const src = (fotosPendientes[bufferKey]||[])[idx];
-  if (!src) return;
-  abrirLightbox([{dataURL:src}], 0, "Vista previa");
+async function verFotoUnica(bufferKey, idx){
+  const ref = REF_TEMP[bufferKey];
+  if (!ref) return;
+  const arr = await obtenerFotosDB(ref.tipo, ref.id);
+  const foto = arr[idx];
+  if (!foto) return;
+  abrirLightbox([{dataURL:foto.dataURL}], 0, "Vista previa");
 }
 
 // ===== FIRMA DIGITAL (canvas táctil, para conformidad del cliente al finalizar obra) =====
