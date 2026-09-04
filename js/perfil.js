@@ -54,8 +54,10 @@ function renderPaginaPerfil() {
           <input id="emp-dir" placeholder="Ciudad, Provincia"></div>
         <div class="fld"><label>Email de contacto</label>
           <input id="emp-email" type="email" placeholder="info@tuempresa.com"></div>
-        <div class="fld"><label>CUIT / matrícula</label>
+        <div class="fld"><label>CUIT</label>
           <input id="emp-cuit" placeholder="20-XXXXXXXX-X"></div>
+        <div class="fld"><label>Matrícula profesional</label>
+          <input id="emp-matricula" placeholder="Ej: MP-12345"></div>
         <div class="fld"><label>Sitio web (opcional)</label>
           <input id="emp-web" placeholder="www.tuempresa.com.ar"></div>
       </div>
@@ -143,6 +145,7 @@ function cargarPerfil() {
       set("emp-dir", emp.dir);
       set("emp-email", emp.email);
       set("emp-cuit", emp.cuit);
+      set("emp-matricula", emp.matricula);
       set("emp-web", emp.web);
     } catch(e) {}
   } else {
@@ -189,6 +192,7 @@ async function guardarPerfil() {
     dir: document.getElementById("emp-dir")?.value || "",
     email: document.getElementById("emp-email")?.value || "",
     cuit: document.getElementById("emp-cuit")?.value || "",
+    matricula: document.getElementById("emp-matricula")?.value || "",
     web: document.getElementById("emp-web")?.value || ""
   };
 
