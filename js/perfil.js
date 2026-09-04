@@ -205,10 +205,13 @@ async function guardarPerfil() {
       .from("logos")
       .upload(path, file, { upsert: true });
 
-    if (!uploadError) {
-      const { data: urlData } = sb.storage.from("logos").getPublicUrl(path);
-      logo_url = urlData.publicUrl;
+    if (uploadError) {
+      console.error("Error al subir el logo:", uploadError);
+      mostrarMsgPerfil("No se pudo subir el logo: " + uploadError.message, "red");
+      return; // no seguimos guardando el resto para que el usuario vea el error y reintente
     }
+    const { data: urlData } = sb.storage.from("logos").getPublicUrl(path);
+    logo_url = urlData.publicUrl;
   }
 
   // Actualizar en Supabase
