@@ -744,6 +744,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   await iniciarAuth();
 });
 
+// ══════════════════════════════════════
+// Recuperación al volver de la cámara (o de cualquier otra app externa).
+// Algunos navegadores, al volver, no recargan la página del todo — la
+// "restauran" desde una caché propia (bfcache), y eso NO dispara
+// DOMContentLoaded — por eso el usuario podía terminar viendo el
+// Dashboard en vez de quedarse donde estaba. Esto cubre ese caso.
+// ══════════════════════════════════════
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    try{
+      const guardada = localStorage.getItem("franz-ultima-pagina");
+      const appVisible = document.getElementById("app-container");
+      if (guardada && appVisible && appVisible.style.display !== "none" && typeof ir === "function") {
+        ir(guardada);
+        if (typeof renderMiniaturasPendientes === "function") {
+          renderMiniaturasPendientes("rel", "rel-fotos-preview");
+        }
+      }
+    }catch(e){ console.warn("No se pudo restaurar la pantalla al volver:", e); }
+  }
+});
+
 // Override de ir() para manejar perfil y admin
 const irOriginal = ir;
 window.ir = function(id) {
