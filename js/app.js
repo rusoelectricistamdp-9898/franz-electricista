@@ -42,7 +42,7 @@ function ir(id){
     if(b.getAttribute("onclick")?.includes(`'${id}'`)) b.classList.add("active");
   });
   if(window.innerWidth<=768) sbClose();
-  try{ sessionStorage.setItem("franz-ultima-pagina", id); }catch(e){}
+  try{ localStorage.setItem("franz-ultima-pagina", id); }catch(e){}
   const fn={dashboard:actualizarDashboard,clientes:mostrarClientes,obras:mostrarObras,
     materiales:mostrarMateriales,componentes:mostrarComponentes,tableros:mostrarTableros,
     presupuestos:mostrarPresupuestos,facturas:mostrarFacturas,relevamiento:mostrarRelevamientos,
@@ -691,7 +691,7 @@ function datosEmpresaPDF(){
     nombre: ed.nombre || licenciaActual?.empresa || licenciaActual?.nombre || "Servicio Eléctrico Profesional",
     tel: ed.tel || "", dir: ed.dir || "",
     email: ed.email || (typeof usuarioActual!=="undefined" && usuarioActual?.email) || "",
-    cuit: ed.cuit || "", web: ed.web || "",
+    cuit: ed.cuit || "", matricula: ed.matricula || "", web: ed.web || "",
     logo: (esPro() && licenciaActual?.logo_url) ? licenciaActual.logo_url : null,
   };
 }
@@ -1164,11 +1164,16 @@ async function guardarRelevamiento(){
   const cliente=val("rel-cliente");
   if(!cliente){toast("Cliente obligatorio","red");return;}
   const id=uid();
-  DB.relevamientos.push({id,cliente,dir:val("rel-dir"),tipo:val("rel-tipo"),
+  DB.relevamientos.push({id,cliente,dni:val("rel-dni"),dir:val("rel-dir"),tipo:val("rel-tipo"),
+    suministro:val("rel-suministro"),antiguedad:val("rel-antiguedad"),superficie:val("rel-superficie"),
     gabinete:val("rel-gabinete"),diferencial:val("rel-diferencial"),
     termicas:val("rel-termicas"),pat:val("rel-pat"),
     aea:esCasillaMarcada("rel-aea"),interv:esCasillaMarcada("rel-interv"),
-    obs:val("rel-obs"),fecha:hoy()});
+    obs:val("rel-obs"),
+    tensionLN:val("rel-tension-ln"),tensionLT:val("rel-tension-lt"),
+    resistenciaPat:val("rel-resistencia-pat"),continuidadPE:val("rel-continuidad-pe"),
+    corrienteCarga:val("rel-corriente-carga"),aislamiento:val("rel-aislamiento"),
+    fecha:hoy()});
   guardarDB("relevamientos");
   await confirmarFotosPendientes("rel","relevamiento",id,"hallazgo");
   await limpiarFotosPendientes("rel","rel-fotos-preview");
@@ -1224,41 +1229,122 @@ async function exportarRelevamientoPDF(id){
   try{ fotos=await obtenerFotosDB("relevamiento",id); }
   catch(e){ fotos=[]; }
 
-  let diagnostico="";
-  if(r.diferencial==="No posee") diagnostico+=`<div>⚠ <b>CRÍTICO:</b> Ausencia de protección diferencial. Riesgo de electrocución.</div>`;
-  if(r.pat==="No posee") diagnostico+=`<div>⚠ <b>CRÍTICO:</b> Ausencia de PAT. Incumplimiento AEA 90364.</div>`;
-  if(r.gabinete==="Malo") diagnostico+=`<div>Gabinete deficiente. Se recomienda reemplazo urgente.</div>`;
-  if(r.termicas==="Malo") diagnostico+=`<div>Térmicas deficientes. Requieren evaluación.</div>`;
-  if(!r.aea) diagnostico+=`<div>No cumple criterios AEA 90364 verificados.</div>`;
-  if(r.interv) diagnostico+=`<div>Intervenciones previas por terceros detectadas.</div>`;
-  if(!diagnostico) diagnostico=`<div>✅ No se detectaron anomalías relevantes.</div>`;
+  const e=datosEmpresaPDF();
+  const numero = "RT-"+String(r.id||"").slice(-6).toUpperCase();
+
+  // Clasifica cada ítem del relevamiento en Conforme / Observación / Crítico,
+  // con su prioridad y una observación en texto — así arma la tabla y el
+  // resumen de "Estado general" a partir de los mismos datos que ya cargás.
+  function clasificar(valor, textos){
+    const v=(valor||"").toLowerCase();
+    if(v.startsWith("bueno")||v.startsWith("buena")) return {estado:"Conforme", obs:textos.ok||"En buen estado.", prioridad:"—", color:"#16a34a", bg:"#dcfce7"};
+    if(v.startsWith("regular")) return {estado:"Observación", obs:textos.regular||"Requiere revisión.", prioridad:"Media", color:"#b45309", bg:"#fef3c7"};
+    if(v.startsWith("malo")||v.startsWith("mala")) return {estado:"Crítico", obs:textos.malo||"Estado deficiente, requiere corrección.", prioridad:"Alta", color:"#b91c1c", bg:"#fee2e2"};
+    return {estado:"Crítico", obs:textos.noposee||"No posee — incumplimiento normativo.", prioridad:"Alta", color:"#b91c1c", bg:"#fee2e2"};
+  }
+  const filasEstado = [
+    ["Tablero / Gabinete", clasificar(r.gabinete, {ok:"En buen estado general.", regular:"Verificar estado y cierre del gabinete.", malo:"Gabinete deficiente, se recomienda reemplazo.", noposee:"No posee gabinete reglamentario."})],
+    ["Interruptor diferencial", clasificar(r.diferencial, {ok:"Funciona correctamente.", regular:"Verificar funcionamiento con botón de test.", malo:"Diferencial deficiente, requiere reemplazo.", noposee:"Ausencia de protección diferencial. Riesgo de electrocución."})],
+    ["Térmicas", clasificar(r.termicas, {ok:"En buen estado.", regular:"Verificar calibre y curvas de disparo.", malo:"Térmicas deficientes, requieren evaluación.", noposee:"No posee protección termomagnética."})],
+    ["Puesta a tierra (PAT)", clasificar(r.pat, {ok:"Correcta.", regular:"Verificar medición y estado de jabalina.", malo:"PAT deficiente, requiere corrección.", noposee:"No se constató PAT. Verificar conductor y jabalina."})],
+  ];
+  const cumpleAEA = { estado: r.aea?"Conforme":"Crítico", obs: r.aea?"Cumple criterios AEA 90364 verificados.":"Requiere adecuación para cumplir AEA 90364.", prioridad: r.aea?"—":"Alta", color: r.aea?"#16a34a":"#b91c1c", bg: r.aea?"#dcfce7":"#fee2e2" };
+  filasEstado.push(["Cumplimiento AEA 90364", cumpleAEA]);
+
+  const criticos = filasEstado.filter(([,c])=>c.estado==="Crítico").length;
+  const observaciones = filasEstado.filter(([,c])=>c.estado==="Observación").length;
+  const conformes = filasEstado.filter(([,c])=>c.estado==="Conforme").length;
+  const estadoGeneral = criticos>0 ? {texto:"REQUIERE ADECUACIONES URGENTES", color:"#b91c1c", bg:"#fee2e2"}
+    : observaciones>0 ? {texto:"REQUIERE ADECUACIONES", color:"#b45309", bg:"#fef3c7"}
+    : {texto:"INSTALACIÓN CONFORME", color:"#16a34a", bg:"#dcfce7"};
+
+  const filasTablaHTML = filasEstado.map(([nombre,c],i)=>`
+    <tr style="background:${i%2?"#f8fafc":"#fff"}">
+      <td>${i+1}</td><td>${nombre}</td>
+      <td><span style="background:${c.bg};color:${c.color};padding:3px 10px;border-radius:20px;font-size:9.5px;font-weight:700">${c.estado}</span></td>
+      <td>${c.obs}</td>
+      <td style="text-align:center">${c.prioridad!=="—"?`<span style="color:${c.color};font-weight:700">${c.prioridad}</span>`:"—"}</td>
+    </tr>`).join("");
+
+  const medicionesFilas = [
+    ["Tensión L-N", r.tensionLN, "V"], ["Tensión L-T", r.tensionLT, "V"],
+    ["Resistencia de puesta a tierra", r.resistenciaPat, "Ω"], ["Continuidad PE", r.continuidadPE, ""],
+    ["Corriente de carga", r.corrienteCarga, "A"], ["Aislamiento", r.aislamiento, "MΩ"],
+  ].filter(([,v])=>v);
+  const medicionesHTML = medicionesFilas.length ? `
+    <div class="doc-titulo" style="font-size:12px;margin:18px 0 6px">MEDICIONES (valores de referencia)</div>
+    <table><thead><tr><th>Parámetro</th><th>Valor</th><th>Unidad</th></tr></thead><tbody>
+      ${medicionesFilas.map(([p,v,u],i)=>`<tr style="background:${i%2?"#f8fafc":"#fff"}"><td>${p}</td><td>${v}</td><td>${u}</td></tr>`).join("")}
+    </tbody></table>` : "";
 
   const fotosHTML = fotos.length ? `
-    <div class="doc-titulo" style="font-size:12px;margin:18px 0 8px">EVIDENCIA FOTOGRÁFICA (${fotos.length})</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-      ${fotos.map(f=>`<img src="${f.dataURL}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">`).join("")}
+    <div class="doc-titulo" style="font-size:12px;margin:18px 0 8px">REGISTRO FOTOGRÁFICO (${fotos.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${fotos.map((f,i)=>`<div>
+        <img src="${f.dataURL}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">
+        <div style="font-size:9px;color:#64748b;margin-top:3px">${String(i+1).padStart(2,"0")}</div>
+      </div>`).join("")}
     </div>` : `<div style="margin-top:16px;color:#94a3b8;font-size:10px">Sin fotos cargadas para este relevamiento.</div>`;
+
+  // Recomendaciones: una por cada ítem que no esté conforme
+  const recomendaciones = filasEstado.filter(([,c])=>c.estado!=="Conforme").map(([nombre,c])=>`Adecuar: ${nombre.toLowerCase()} — ${c.obs}`);
+  if(!recomendaciones.length) recomendaciones.push("Realizar un nuevo relevamiento periódico según buenas prácticas de mantenimiento.");
+  const recomendacionesHTML = `
+    <div class="doc-titulo" style="font-size:12px;margin:18px 0 6px">RECOMENDACIONES</div>
+    <ol style="margin:0;padding-left:18px;font-size:10.5px;color:#334155;line-height:1.8">
+      ${recomendaciones.map(rr=>`<li>${rr}</li>`).join("")}
+    </ol>`;
 
   const html=`<html><head><meta charset="UTF-8"><title>Relevamiento ${escapeHtml(r.cliente)}</title><style>${ESTILOS_PDF}</style></head><body>
     ${membretePDF()}
     <div class="doc-head">
-      <div><div class="doc-titulo">RELEVAMIENTO TÉCNICO</div><div class="doc-num">${r.fecha}</div></div>
+      <div><div class="doc-titulo">INFORME DE RELEVAMIENTO TÉCNICO</div><div class="doc-num">N° ${numero} &nbsp;·&nbsp; ${r.fecha}</div></div>
     </div>
-    <div class="datos-box">
-      <b>Cliente:</b> ${escapeHtml(r.cliente)}${r.dir?` &nbsp;·&nbsp; <b>Dirección:</b> ${escapeHtml(r.dir)}`:""} &nbsp;·&nbsp; <b>Tipo:</b> ${escapeHtml(r.tipo)}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="datos-box">
+        <div style="font-weight:700;color:#0f172a;margin-bottom:6px;font-size:10.5px">DATOS DEL CLIENTE</div>
+        <b>Nombre:</b> ${escapeHtml(r.cliente)}<br>
+        ${r.dni?`<b>DNI:</b> ${escapeHtml(r.dni)}<br>`:""}
+        ${r.dir?`<b>Dirección:</b> ${escapeHtml(r.dir)}<br>`:""}
+      </div>
+      <div class="datos-box">
+        <div style="font-weight:700;color:#0f172a;margin-bottom:6px;font-size:10.5px">DATOS DE LA INSTALACIÓN</div>
+        <b>Tipo:</b> ${escapeHtml(r.tipo)}<br>
+        ${r.suministro?`<b>Suministro:</b> ${escapeHtml(r.suministro)}<br>`:""}
+        ${r.antiguedad?`<b>Antigüedad:</b> ${escapeHtml(r.antiguedad)}<br>`:""}
+        ${r.superficie?`<b>Superficie:</b> ${escapeHtml(r.superficie)}<br>`:""}
+      </div>
     </div>
-    <table><thead><tr><th>Ítem</th><th>Estado</th></tr></thead><tbody>
-      <tr><td>Gabinete / tablero</td><td>${escapeHtml(r.gabinete)}</td></tr>
-      <tr><td>Diferencial</td><td>${escapeHtml(r.diferencial)}</td></tr>
-      <tr><td>Térmicas</td><td>${escapeHtml(r.termicas)}</td></tr>
-      <tr><td>PAT / Puesta a tierra</td><td>${escapeHtml(r.pat)}</td></tr>
-      <tr><td>Cumple AEA 90364</td><td>${r.aea?"Sí":"No"}</td></tr>
-      <tr><td>Intervenciones previas por terceros</td><td>${r.interv?"Sí":"No"}</td></tr>
-    </tbody></table>
-    ${r.obs?`<div class="datos-box" style="margin-top:14px"><b>Observaciones:</b> ${escapeHtml(r.obs)}</div>`:""}
-    <div class="doc-titulo" style="font-size:12px;margin:18px 0 6px">DIAGNÓSTICO</div>
-    <div class="datos-box">${diagnostico}</div>
+
+    <div style="background:${estadoGeneral.bg};border:1px solid ${estadoGeneral.color};border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div style="font-weight:700;color:${estadoGeneral.color};font-size:12px">⚠ ${estadoGeneral.texto}</div>
+      <div style="display:flex;gap:14px;font-size:10px;color:#334155">
+        <span><b style="color:#b91c1c">${criticos}</b> Críticos</span>
+        <span><b style="color:#b45309">${observaciones}</b> Observaciones</span>
+        <span><b style="color:#16a34a">${conformes}</b> Conformes</span>
+      </div>
+    </div>
+
+    <div class="doc-titulo" style="font-size:12px;margin-bottom:6px">RELEVAMIENTO TÉCNICO</div>
+    <table><thead><tr><th>N°</th><th>Elemento</th><th>Estado</th><th>Observación</th><th style="text-align:center">Prioridad</th></tr></thead>
+    <tbody>${filasTablaHTML}</tbody></table>
+
+    ${medicionesHTML}
+    ${r.obs?`<div class="datos-box" style="margin-top:14px"><b>Observaciones adicionales:</b> ${escapeHtml(r.obs)}</div>`:""}
     ${fotosHTML}
+    ${recomendacionesHTML}
+
+    <div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px">
+      <div style="flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:10px;color:#334155;text-align:center">
+        Firma del técnico responsable<br>
+        <b>${escapeHtml(e.nombre)}</b>${e.matricula?`<br>Mat. Prof. ${escapeHtml(e.matricula)}`:""}
+      </div>
+      <div style="flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:10px;color:#334155;text-align:center">
+        Conformidad del cliente<br>Firma y aclaración
+      </div>
+    </div>
+
     <div class="terminos">Relevamiento realizado conforme a normativa AEA 90364 vigente. Este informe refleja el estado observado al momento de la inspección, no reemplaza una verificación reglamentaria formal.</div>
     ${creditoAppPDF()}
   </body></html>`;
