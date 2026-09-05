@@ -248,6 +248,9 @@
     <div class="panel" id="panel-plantilla-resultado" style="display:none">
       <div class="panel-title">📦 Materiales — <span id="act-nombre-sel"></span></div>
       <div id="lista-plantilla"></div>
+      <div class="fld" style="margin-top:8px"><label>Obra destino (opcional, para etiquetar en Lista de Compras)</label>
+        <select id="plantilla-obra-destino"><option value="">— Sin asignar —</option></select>
+      </div>
       <div class="btn-row" style="margin-top:12px">
         <button class="btn btn-verde" onclick="pasarPlantillaAPresupuesto()">→ Pasar a presupuesto</button>
         <button class="btn btn-outline" onclick="pasarPlantillaACompras()">🛒 Agregar a compras</button>
@@ -292,8 +295,11 @@
     <div class="panel">
       <div class="panel-title">Nuevo presupuesto</div>
       <div class="form-grid g2">
-        <div class="fld"><label>Cliente</label><select id="pres-cliente"><option value="">— Seleccionar —</option></select></div>
-        <div class="fld"><label>Obra / descripción</label><input id="pres-obra" placeholder="Instalación eléctrica completa"></div>
+        <div class="fld"><label>Cliente</label><select id="pres-cliente" onchange="sincronizarSelectObrasPres()"><option value="">— Seleccionar —</option></select></div>
+        <div class="fld"><label>Obra (opcional, si ya la tenés cargada)</label>
+          <select id="pres-obra-select" onchange="autocompletarObraPres()"><option value="">— Sin vincular a una obra —</option></select>
+        </div>
+        <div class="fld"><label>Descripción del trabajo</label><input id="pres-obra" placeholder="Instalación eléctrica completa"></div>
       </div>
     </div>
 
@@ -461,7 +467,7 @@
         <div class="foto-picker">
           <label class="btn btn-outline btn-sm" style="cursor:pointer">
             📷 Tomar / subir foto
-            <input type="file" accept="image/*" capture="environment" multiple style="display:none"
+            <input type="file" accept="image/*" multiple style="display:none"
               onchange="manejarSeleccionFotos(this,'rel','rel-fotos-preview')">
           </label>
           <small style="color:var(--muted2)">Se comprimen automáticamente antes de guardarse</small>
@@ -679,11 +685,25 @@
         <div class="fld"><label>Material</label><input id="comp-nombre" placeholder="Cable 2,5mm² negro"></div>
         <div class="fld"><label>Cantidad</label><input id="comp-cant" type="number" placeholder="10"></div>
         <div class="fld"><label>Proveedor sugerido</label><input id="comp-prov" placeholder="Casa Blanco..."></div>
+        <div class="fld"><label>Cliente / obra (opcional)</label><select id="comp-cliente"><option value="">— Sin asignar —</option></select></div>
       </div>
       <div class="btn-row"><button class="btn btn-verde" onclick="agregarItemCompra()">+ Agregar</button></div>
     </div>
     <div class="panel">
       <div class="panel-title">Ítems pendientes <span id="comp-count" class="badge badge-green">0</span></div>
+      <div class="form-grid g2">
+        <div class="fld"><label>Filtrar por cliente</label>
+          <select id="comp-filtro-cliente" onchange="mostrarCompras()"><option value="">— Todos —</option></select>
+        </div>
+        <div class="fld"><label>Filtrar por estado</label>
+          <select id="comp-filtro-estado" onchange="mostrarCompras()">
+            <option value="">— Todos —</option>
+            <option value="falta">🟠 Falta</option>
+            <option value="comprado">🟢 Comprado</option>
+            <option value="instalado">🔵 Instalado</option>
+          </select>
+        </div>
+      </div>
       <div id="lista-compras"></div>
       <div class="btn-row" style="margin-top:12px">
         <button class="btn btn-verde" onclick="exportarComprasPDF()">📄 PDF</button>
