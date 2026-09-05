@@ -185,13 +185,31 @@ function renderClientes(lista){
     </div></div>`).join("");
 }
 function sincronizarSelectClientes(){
-  ["ob-cliente","tab-obra","pres-cliente","fac-cliente"].forEach(id=>{
+  const etiquetaVacia={ "comp-filtro-cliente":"— Todos —" };
+  ["ob-cliente","tab-obra","pres-cliente","fac-cliente","comp-cliente","comp-filtro-cliente"].forEach(id=>{
     const sel=get(id); if(!sel) return;
     const v=sel.value;
-    sel.innerHTML=`<option value="">— Seleccionar —</option>`;
+    sel.innerHTML=`<option value="">${etiquetaVacia[id]||"— Seleccionar —"}</option>`;
     DB.clientes.forEach(c=>{sel.innerHTML+=`<option value="${c.nombre}">${c.nombre}</option>`;});
     sel.value=v;
   });
+}
+// Filtra las obras del cliente elegido, para poder vincular el presupuesto
+// a una obra real en vez de solo un texto suelto.
+function sincronizarSelectObrasPres(){
+  const cliente=val("pres-cliente");
+  const sel=get("pres-obra-select"); if(!sel) return;
+  const v=sel.value;
+  const obrasDelCliente = cliente ? DB.obras.filter(o=>o.cliente===cliente) : [];
+  sel.innerHTML = `<option value="">— Sin vincular a una obra —</option>` +
+    obrasDelCliente.map(o=>`<option value="${o.id}">${escapeHtml(o.nombre)}${o.dir?" — "+escapeHtml(o.dir):""}</option>`).join("");
+  if(obrasDelCliente.some(o=>o.id===v)) sel.value=v;
+}
+function autocompletarObraPres(){
+  const obraId=val("pres-obra-select");
+  const obra=DB.obras.find(o=>o.id===obraId);
+  const campoTexto=get("pres-obra");
+  if(obra && campoTexto) campoTexto.value = obra.nombre + (obra.dir?` — ${obra.dir}`:"");
 }
 
 // OBRAS
@@ -267,7 +285,7 @@ function abrirFinalizarObra(id){
         <div class="foto-picker">
           <label class="btn btn-outline btn-sm" style="cursor:pointer">
             📷 Tomar / subir foto
-            <input type="file" accept="image/*" capture="environment" multiple style="display:none"
+            <input type="file" accept="image/*" multiple style="display:none"
               onchange="manejarSeleccionFotos(this,'fin','fin-fotos-preview')">
           </label>
           <small style="color:var(--muted2)">Materiales colocados, estado final, etc.</small>
@@ -383,8 +401,8 @@ function materialItemHTML(m){
     <small>🏭 ${m.marca||"—"} ${m.modelo?("· "+m.modelo):""} ${m.caract?("· "+m.caract):""}</small>
     ${m.proveedor?`<br><small style="color:var(--muted2)">🚚 ${m.proveedor}</small>`:""}</div>
     <div class="item-actions">
-      <button class="btn btn-outline btn-sm" onclick="agregarMaterialACompra('${m.id}')">🛒</button>
-      <button class="btn btn-outline btn-sm" onclick="agregarMaterialAPres('${m.id}')">📋</button>
+      <button class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan)" title="Agregar a Lista de Compras (para pedir/comprar)" onclick="agregarMaterialACompra('${m.id}')">🛒 Comprar</button>
+      <button class="btn btn-verde btn-sm" title="Agregar al presupuesto que estás armando ahora" onclick="agregarMaterialAPres('${m.id}')">📋 A presupuesto</button>
       <button class="btn btn-red btn-sm" onclick="eliminarMaterial('${m.id}')">✕</button>
     </div></div></div>`;
 }
@@ -405,14 +423,59 @@ function renderMasMateriales(){
 }
 function agregarMaterialACompra(id){
   const m=DB.materiales.find(x=>x.id===id); if(!m) return;
-  const cant=parseInt(prompt("Cantidad de "+m.nombre+":"))||1;
-  DB.compras.push({id:uid(),nombre:m.nombre,cant,prov:m.proveedor||"",fecha:hoy()});
-  guardarDB("compras"); toast(m.nombre+" agregado a compras");
+  const opcionesClientes = `<option value="">Sin asignar</option>` + DB.clientes.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join("");
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.innerHTML=`
+    <div class="modal-box" style="max-width:360px">
+      <h3 style="margin-bottom:4px">🛒 Agregar a Lista de Compras</h3>
+      <p style="color:var(--muted2);font-size:.82rem;margin-bottom:14px"><b>${escapeHtml(m.nombre)}</b></p>
+      <div class="fld"><label>Cantidad</label><input type="number" id="modal-compra-cant" value="1" min="1"></div>
+      <div class="fld"><label>Cliente / obra (opcional)</label><select id="modal-compra-cliente">${opcionesClientes}</select></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-verde" onclick="confirmarAgregarMaterialACompra('${id}')">Agregar</button>
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
+}
+function confirmarAgregarMaterialACompra(id){
+  const m=DB.materiales.find(x=>x.id===id); if(!m) return;
+  const cant=parseInt(get("modal-compra-cant")?.value)||1;
+  const cliente=get("modal-compra-cliente")?.value||"";
+  DB.compras.push({id:uid(),nombre:m.nombre,cant,prov:m.proveedor||"",cliente,estado:"falta",fecha:hoy()});
+  guardarDB("compras");
+  document.querySelector(".modal-overlay")?.remove();
+  toast(m.nombre+" agregado a Lista de Compras");
 }
 function agregarMaterialAPres(id){
   const m=DB.materiales.find(x=>x.id===id); if(!m) return;
-  const cant=parseInt(prompt("Cantidad:"))||1;
-  const precio=parseFloat(prompt("Precio unitario ($):")||"0")||0;
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.innerHTML=`
+    <div class="modal-box" style="max-width:380px">
+      <h3 style="margin-bottom:4px">📋 Agregar al presupuesto</h3>
+      <p style="color:var(--muted2);font-size:.82rem;margin-bottom:14px">
+        <b>${escapeHtml(m.nombre)}</b><br>
+        <span style="font-size:.78rem">Se agrega al presupuesto que estás armando ahora.</span>
+      </p>
+      <div class="form-grid g2">
+        <div class="fld"><label>Cantidad</label><input type="number" id="modal-mat-cant" value="1" min="1"></div>
+        <div class="fld"><label>Precio unitario ($)</label><input type="number" id="modal-mat-precio" value="0" min="0"></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-verde" onclick="confirmarAgregarMaterialAPres('${id}')">Agregar</button>
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
+}
+function confirmarAgregarMaterialAPres(id){
+  const m=DB.materiales.find(x=>x.id===id); if(!m) return;
+  const cant=parseInt(get("modal-mat-cant")?.value)||1;
+  const precio=parseFloat(get("modal-mat-precio")?.value)||0;
   presItemsActual.push({nombre:m.nombre,cant,precio});
   renderPresItems(); ir("presupuestos"); toast(m.nombre+" agregado al presupuesto");
 }
@@ -503,6 +566,11 @@ function seleccionarActividad(id){
     </div>`).join("");
   get("panel-plantilla-resultado").style.display="block";
   get("panel-plantilla-resultado").scrollIntoView({behavior:"smooth"});
+  const selObra=get("plantilla-obra-destino");
+  if(selObra){
+    selObra.innerHTML=`<option value="">— Sin asignar —</option>`+
+      DB.obras.map(o=>`<option value="${o.id}">${escapeHtml(o.cliente)} — ${escapeHtml(o.nombre)}</option>`).join("");
+  }
 }
 function pasarPlantillaAPresupuesto(){
   if(!actividadSeleccionada){toast("Seleccioná una actividad","red");return;}
@@ -514,9 +582,11 @@ function pasarPlantillaAPresupuesto(){
 }
 function pasarPlantillaACompras(){
   if(!actividadSeleccionada){toast("Seleccioná una actividad","red");return;}
+  const obraId=val("plantilla-obra-destino");
+  const obra=DB.obras.find(o=>o.id===obraId);
   actividadSeleccionada.mats.forEach((m,i)=>{
     const cant=parseInt(get("plt-cant-"+i)?.value)||1;
-    if(cant>0) DB.compras.push({id:uid(),nombre:m,cant,prov:"",fecha:hoy()});
+    if(cant>0) DB.compras.push({id:uid(),nombre:m,cant,prov:"",cliente:obra?obra.cliente:"",estado:"falta",fecha:hoy()});
   });
   guardarDB("compras"); ir("compras"); toast("Materiales agregados a compras");
 }
@@ -639,7 +709,7 @@ function guardarPresupuesto(){
   const mo=parseFloat(val("pres-mo"))||0;
   const totalAdic=presAdicionalesActual.reduce((s,i)=>s+i.importe,0);
   DB.presupuestos.push({
-    id:uid(),cliente,obra:val("pres-obra"),
+    id:uid(),cliente,obra:val("pres-obra"),obraId:val("pres-obra-select")||null,
     items:[...presItemsActual],
     componentes:[...presComponentesActual],
     adicionales:[...presAdicionalesActual],
@@ -649,6 +719,8 @@ function guardarPresupuesto(){
   presItemsActual=[]; presComponentesActual=[]; presAdicionalesActual=[];
   renderPresItems(); renderPresComponentes(); renderPresAdicionales();
   const e=get("pres-mo"); if(e) e.value="";
+  const eObra=get("pres-obra"); if(eObra) eObra.value="";
+  const eObraSel=get("pres-obra-select"); if(eObraSel) eObraSel.value="";
   mostrarPresupuestos(); actualizarDashboard(); toast("Presupuesto guardado");
 }
 function eliminarPresupuesto(id){
@@ -657,6 +729,7 @@ function eliminarPresupuesto(id){
   guardarDB("presupuestos"); mostrarPresupuestos(); actualizarDashboard();
 }
 function mostrarPresupuestos(){
+  sincronizarSelectObrasPres();
   const cnt=get("pres-count"); if(cnt) cnt.textContent=textoContadorPlan("presupuestos");
   const cont=get("lista-presupuestos"); if(!cont) return;
   if(!DB.presupuestos.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Sin presupuestos.</p>`;return;}
@@ -677,7 +750,7 @@ function pasarPresupuestoACompras(id){
   const p=DB.presupuestos.find(x=>x.id===id); if(!p) return;
   const items=[...(p.items||[]), ...(p.componentes||[])];
   if(!items.length){ toast("Este presupuesto no tiene materiales cargados","red"); return; }
-  items.forEach(i=>{ DB.compras.push({id:uid(), nombre:i.nombre, cant:i.cant, prov:"", fecha:hoy()}); });
+  items.forEach(i=>{ DB.compras.push({id:uid(), nombre:i.nombre, cant:i.cant, prov:"", cliente:p.cliente, estado:"falta", fecha:hoy()}); });
   guardarDB("compras");
   ir("compras");
   toast(`${items.length} materiales de "${p.cliente}" agregados a la lista de compras`);
@@ -1562,7 +1635,7 @@ function pasarCalculoACompras(){
     items.push({nombre:`Abrazadera ${c.diam}mm`,cant:c.abrazaderas});
     items.push({nombre:`Taco + tornillo`,cant:c.tacos});
   }
-  items.forEach(i=>{ if(i.cant>0) DB.compras.push({id:uid(),nombre:i.nombre,cant:i.cant,prov:"",fecha:hoy()}); });
+  items.forEach(i=>{ if(i.cant>0) DB.compras.push({id:uid(),nombre:i.nombre,cant:i.cant,prov:"",estado:"falta",fecha:hoy()}); });
   guardarDB("compras"); ir("compras"); toast("Materiales agregados a compras");
 }
 
@@ -1703,29 +1776,69 @@ function mostrarOmisiones(){
 function agregarItemCompra(){
   const nombre=val("comp-nombre");
   if(!nombre){toast("Ingresá el material","red");return;}
-  DB.compras.push({id:uid(),nombre,cant:parseInt(val("comp-cant"))||1,prov:val("comp-prov"),fecha:hoy()});
+  DB.compras.push({id:uid(),nombre,cant:parseInt(val("comp-cant"))||1,prov:val("comp-prov"),cliente:val("comp-cliente")||"",estado:"falta",fecha:hoy()});
   guardarDB("compras");
   ["comp-nombre","comp-cant","comp-prov"].forEach(id=>{const e=get(id);if(e)e.value="";});
   mostrarCompras(); toast("Ítem agregado");
 }
+function reasignarClienteCompra(id, cliente){
+  const item=DB.compras.find(c=>c.id===id); if(!item) return;
+  item.cliente=cliente;
+  guardarDB("compras");
+}
 function eliminarItemCompra(id){ DB.compras=DB.compras.filter(c=>c.id!==id); guardarDB("compras"); mostrarCompras(); }
 function limpiarCompras(){ if(!confirm("Limpiar lista?")) return; DB.compras=[]; guardarDB("compras"); mostrarCompras(); }
+const ESTADOS_COMPRA = {
+  falta:     {label:"🟠 Falta",     color:"#f59e0b"},
+  comprado:  {label:"🟢 Comprado",  color:"#16a34a"},
+  instalado: {label:"🔵 Instalado", color:"#0ea5e9"},
+};
+function cambiarEstadoCompra(id, estado){
+  const item=DB.compras.find(c=>c.id===id); if(!item) return;
+  item.estado=estado;
+  guardarDB("compras");
+  mostrarCompras();
+}
 function mostrarCompras(){
   const cnt=get("comp-count"); if(cnt) cnt.textContent=DB.compras.length;
   const cont=get("lista-compras"); if(!cont) return;
-  if(!DB.compras.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">Lista vacía.</p>`;return;}
-  cont.innerHTML=DB.compras.map(c=>`<div class="item"><div class="item-row">
+  const filtroCliente=val("comp-filtro-cliente");
+  const filtroEstado=val("comp-filtro-estado");
+  let lista=DB.compras;
+  if(filtroCliente) lista=lista.filter(c=>c.cliente===filtroCliente);
+  if(filtroEstado) lista=lista.filter(c=>(c.estado||"falta")===filtroEstado);
+  if(!lista.length){cont.innerHTML=`<p style="color:var(--muted);margin-top:10px;font-size:.82rem">${filtroCliente||filtroEstado?"Sin ítems para este filtro.":"Lista vacía."}</p>`;return;}
+  const opcionesClientes = `<option value="">Sin asignar</option>` + DB.clientes.map(cl=>`<option value="${cl.nombre}">${cl.nombre}</option>`).join("");
+  cont.innerHTML=lista.map(c=>{
+    const estado=c.estado||"falta";
+    const infoEstado=ESTADOS_COMPRA[estado]||ESTADOS_COMPRA.falta;
+    return `<div class="item" style="border-left:3px solid ${infoEstado.color}"><div class="item-row">
     <div><b>${c.nombre}</b> <span class="badge badge-yellow">×${c.cant}</span>
-    ${c.prov?`<br><small>🚚 ${c.prov}</small>`:""}</div>
+    ${c.prov?`<br><small>🚚 ${c.prov}</small>`:""}
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <select id="comp-sel-cliente-${c.id}" onchange="reasignarClienteCompra('${c.id}',this.value)" style="padding:3px 6px;font-size:.78rem;width:auto;margin:0">${opcionesClientes}</select>
+      <select id="comp-sel-estado-${c.id}" onchange="cambiarEstadoCompra('${c.id}',this.value)" style="padding:3px 6px;font-size:.78rem;width:auto;margin:0">
+        <option value="falta">🟠 Falta</option>
+        <option value="comprado">🟢 Comprado</option>
+        <option value="instalado">🔵 Instalado</option>
+      </select>
+    </div></div>
     <button class="btn btn-red btn-sm" onclick="eliminarItemCompra('${c.id}')">✕</button>
-    </div></div>`).join("");
+    </div></div>`;
+  }).join("");
+  lista.forEach(c=>{
+    const selCliente=get(`comp-sel-cliente-${c.id}`);
+    const selEstado=get(`comp-sel-estado-${c.id}`);
+    if(selCliente) selCliente.value=c.cliente||"";
+    if(selEstado) selEstado.value=c.estado||"falta";
+  });
 }
 function exportarComprasPDF(){
   if(!DB.compras.length){toast("Lista vacía","red");return;}
-  const filas=DB.compras.map((c,i)=>`<tr style="background:${i%2?"#f8f9fa":"white"}"><td>${c.nombre}</td><td style="text-align:center">${c.cant}</td><td>${c.prov||"—"}</td></tr>`).join("");
+  const filas=DB.compras.map((c,i)=>`<tr style="background:${i%2?"#f8f9fa":"white"}"><td>${c.nombre}</td><td style="text-align:center">${c.cant}</td><td>${c.prov||"—"}</td><td>${c.cliente||"—"}</td><td>${(ESTADOS_COMPRA[c.estado||"falta"]||ESTADOS_COMPRA.falta).label}</td></tr>`).join("");
   const html=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:30px;font-size:12px}h1{color:#16a34a}table{width:100%;border-collapse:collapse}th{background:#16a34a;color:#fff;padding:8px}td{padding:7px;border-bottom:1px solid #ddd}</style></head><body>
     <h1>⚡ FRANZ ELECTRICIDAD — Lista de compras</h1><p>Fecha: ${hoy()} | ${DB.compras.length} ítems</p>
-    <table><thead><tr><th>Material</th><th>Cantidad</th><th>Proveedor</th></tr></thead><tbody>${filas}</tbody></table></body></html>`;
+    <table><thead><tr><th>Material</th><th>Cantidad</th><th>Proveedor</th><th>Cliente / obra</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table></body></html>`;
   const w=window.open("","_blank"); w.document.write(html); w.document.close(); w.print();
 }
 async function exportarComprasCSV(){
