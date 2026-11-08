@@ -735,3 +735,29 @@ input, select, textarea { font-size:16px; }
   background:var(--bg2); border:1px solid var(--border); border-radius:14px;
   padding:22px; max-width:480px; width:100%; max-height:90vh; overflow-y:auto;
 }
+
+/* ===== Módulo de visita técnica ===== */
+#pg-visita .panel{border-left:3px solid var(--verde);}
+#pg-visita .panel-title{font-size:1rem;letter-spacing:.01em;}
+#pg-visita .fld textarea{min-height:76px;}
+.vt-ayuda{font-size:.78rem;color:var(--muted2);margin:8px 0;line-height:1.45;}
+.vt-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.vt-tools select{min-width:190px;}
+.vt-lista{display:grid;gap:8px;margin-top:12px;}
+.vt-item{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:11px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;}
+.vt-item strong{display:block;margin-bottom:3px;}
+.vt-item small{display:block;color:var(--muted2);line-height:1.4;}
+.vt-item button{flex-shrink:0;}
+#vt-croquis{max-width:100%;cursor:crosshair;}
+#pg-visita .btn-row{gap:8px;flex-wrap:wrap;}
+@media(max-width:600px){#pg-visita .btn-row .btn{width:100%;min-height:44px}.vt-item{flex-direction:column}.vt-item button{width:100%}}
+
+
+/* ETAPA 3 — materiales y salida de visita técnica */
+#pg-visita .vt-resumen{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg2)}
+#pg-visita .vt-resumen strong{color:var(--verde)}
+#pg-visita .vt-material-row{display:grid;grid-template-columns:minmax(0,2fr) repeat(4,minmax(75px,1fr)) auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;margin:7px 0;background:var(--bg2)}
+#pg-visita .vt-material-row small{display:block;color:var(--muted2)}
+#pg-visita .vt-material-row input,#pg-visita .vt-material-row select{width:100%;min-width:0}
+@media(max-width:760px){#pg-visita .vt-material-row{grid-template-columns:1fr 1fr}#pg-visita .vt-material-row .vt-mat-desc{grid-column:1/-1}#pg-visita .vt-material-row button{grid-column:1/-1}}
+@media print{body.vt-print-mode *{visibility:hidden!important}body.vt-print-mode #vt-informe-print,body.vt-print-mode #vt-informe-print *{visibility:visible!important}body.vt-print-mode #vt-informe-print{position:absolute;inset:0;width:100%;background:#fff;color:#111;padding:20px;font:12px Arial}body.vt-print-mode #vt-informe-print h1,body.vt-print-mode #vt-informe-print h2{color:#111}body.vt-print-mode #vt-informe-print table{width:100%;border-collapse:collapse}body.vt-print-mode #vt-informe-print td,body.vt-print-mode #vt-informe-print th{border:1px solid #999;padding:6px;text-align:left}}

@@ -48,6 +48,7 @@
       <button class="menu-btn active" onclick="ir('dashboard')"><span class="ico">📊</span> Dashboard</button>
       <button class="menu-btn" onclick="ir('clientes')"><span class="ico">👤</span> Clientes</button>
       <button class="menu-btn" onclick="ir('obras')"><span class="ico">🏗</span> Obras</button>
+      <button class="menu-btn" onclick="ir('visita')"><span class="ico">🧰</span> Visita técnica</button>
       <button class="menu-btn" onclick="ir('materiales')"><span class="ico">⚡</span> Materiales</button>
       <button class="menu-btn" onclick="ir('componentes')"><span class="ico">🔌</span> Componentes</button>
       <button class="menu-btn" onclick="ir('plantillas')"><span class="ico">📋</span> Plantillas</button>
@@ -94,6 +95,7 @@
         <button class="btn btn-verde" onclick="ir('presupuestos')">💰 Nuevo presupuesto</button>
         <button class="btn btn-outline" onclick="ir('clientes')">👤 Nuevo cliente</button>
         <button class="btn btn-outline" onclick="ir('obras')">🏗 Nueva obra</button>
+        <button class="btn btn-verde" onclick="ir('visita')">🧰 Iniciar visita técnica</button>
         <button class="btn btn-outline" onclick="ir('plantillas')">📋 Usar plantilla</button>
         <button class="btn btn-outline" onclick="ir('calculadoras')">📐 Calculadora AEA</button>
         <button class="btn btn-outline" onclick="ir('relevamiento')">📄 Relevamiento</button>
@@ -167,6 +169,107 @@
         </select>
       </div>
       <div id="lista-obras"></div>
+    </div>
+  </div>
+
+  <!-- ═══ VISITA TÉCNICA (NUEVO FLUJO) ═══ -->
+  <div class="page" id="pg-visita">
+    <div class="ph">
+      <div><h1>🧰 Visita técnica</h1><p>Relevá, inspeccioná, dibujá y calculá desde una sola pantalla.</p></div>
+      <span class="badge badge-green">Modo obra</span>
+    </div>
+    <div class="panel">
+      <div class="panel-title">1 · Datos de la visita</div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Cliente</label><select id="vt-cliente"><option value="">— Seleccionar cliente —</option></select></div>
+        <div class="fld"><label>Obra</label><select id="vt-obra"><option value="">— Seleccionar obra —</option></select></div>
+        <div class="fld"><label>Fecha</label><input id="vt-fecha" type="date"></div>
+        <div class="fld"><label>Tipo de instalación</label><select id="vt-tipo"><option>Residencial</option><option>Comercial</option><option>Industrial</option></select></div>
+        <div class="fld"><label>Estado de visita</label><select id="vt-estado"><option>En curso</option><option>Relevada</option><option>Presupuestada</option></select></div>
+      </div>
+      <div class="fld" style="margin-top:8px"><label>Pedido / relato del cliente</label><textarea id="vt-pedido" placeholder="Qué necesita, qué quiere modificar, prioridades y comentarios..."></textarea></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">2 · Ambiente y relevamiento rápido</div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Ambiente</label><select id="vt-ambiente"><option>Cocina</option><option>Comedor</option><option>Dormitorio</option><option>Baño</option><option>Lavadero</option><option>Garaje</option><option>Patio</option><option>Oficina</option><option>Local</option><option>Galpón</option><option>Taller</option><option value="otro">Otro…</option></select></div>
+        <div class="fld"><label>Nombre personalizado</label><input id="vt-ambiente-otro" placeholder="Ej. habitación del fondo"></div>
+        <div class="fld"><label>Estado general</label><select id="vt-ambiente-estado"><option>Bueno</option><option>Regular</option><option>Deficiente</option><option>Sin instalación</option></select></div>
+      </div>
+      <div class="fld" style="margin-top:8px"><label>Notas rápidas del ambiente</label><textarea id="vt-notas" placeholder="Qué existe, qué se modifica, pedidos del cliente, medidas y detalles…"></textarea></div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Materiales existentes</label><select id="vt-material-cliente"><option value="no">No aporta</option><option value="si">Sí, aporta</option><option value="parcial">Aporta parcialmente</option></select></div>
+        <div class="fld"><label>Canalización prevista</label><select id="vt-canalizacion"><option>Embutida</option><option>A la vista</option><option>Mixta</option><option>A definir</option></select></div>
+        <div class="fld"><label>Tipo de caja / gabinete</label><select id="vt-caja"><option>Embutido</option><option>Exterior</option><option>Gabinete</option><option>Existente</option><option>A definir</option></select></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-outline btn-sm" type="button" onclick="vtAgregarAmbiente()">＋ Incorporar este ambiente</button></div>
+      <div id="vt-lista-ambientes" class="vt-lista"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">3 · Inspección eléctrica del ambiente</div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Canalizaciones</label><select id="vt-i-canal"><option value="pendiente">Pendiente de verificar</option><option value="cumple">Cumple</option><option value="no">No cumple</option><option value="na">No corresponde</option></select></div>
+        <div class="fld"><label>Conductores</label><select id="vt-i-cables"><option value="pendiente">Pendiente de verificar</option><option value="cumple">Cumple</option><option value="no">No cumple</option><option value="na">No corresponde</option></select></div>
+        <div class="fld"><label>Tomas e interruptores</label><select id="vt-i-mecanismos"><option value="pendiente">Pendiente de verificar</option><option value="cumple">Cumple</option><option value="no">No cumple</option><option value="na">No corresponde</option></select></div>
+        <div class="fld"><label>Protección / circuito</label><select id="vt-i-proteccion"><option value="pendiente">Pendiente de verificar</option><option value="cumple">Cumple</option><option value="no">No cumple</option><option value="na">No corresponde</option></select></div>
+        <div class="fld"><label>Estado / conservación</label><select id="vt-i-estado"><option>Bueno</option><option>Regular</option><option>Deficiente</option><option>Riesgoso</option></select></div>
+        <div class="fld"><label>Referencia normativa</label><input id="vt-i-norma" placeholder="AEA aplicable / punto a verificar"></div>
+      </div>
+      <div class="fld" style="margin-top:8px"><label>Incumplimientos, riesgos y correcciones</label><textarea id="vt-i-observaciones" placeholder="Describir hallazgo, ubicación y acción recomendada…"></textarea></div>
+      <p style="font-size:.75rem;color:var(--muted2);margin:6px 0 0">El estado se registra como relevamiento; la app no certifica cumplimiento automáticamente.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">4 · Circuitos y puntos eléctricos</div>
+      <div class="form-grid g3">
+        <div class="fld"><label>Tipo de circuito</label><select id="vt-circuito"><option>Iluminación</option><option>Tomacorrientes uso general</option><option>Tomacorrientes uso especial</option><option>Aire acondicionado</option><option>Bomba / motor</option><option>Emergencia</option><option>Otro</option></select></div>
+        <div class="fld"><label>Cantidad de puntos</label><input id="vt-puntos" type="number" min="0" value="0"></div>
+        <div class="fld"><label>Luminaria / mecanismo</label><input id="vt-tipo-punto" placeholder="LED, toma doble, tecla…"></div>
+        <div class="fld"><label>Conductores / sección</label><input id="vt-conductores" placeholder="Ej. 3 × 1,5 mm² (a verificar)" ></div>
+        <div class="fld"><label>Canalización / diámetro</label><input id="vt-cano-diam" placeholder="Tipo y diámetro"></div>
+        <div class="fld"><label>Recorrido estimado (m)</label><input id="vt-recorrido" type="number" min="0" step="0.1" placeholder="Metros"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-verde" type="button" onclick="vtAgregarCircuito()">＋ Agregar circuito</button></div><div id="vt-lista-circuitos" class="vt-lista"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">5 · Croquis rápido</div>
+      <p class="vt-ayuda">Dibujá recorridos con el dedo o mouse. Elegí un símbolo y tocá el croquis para ubicarlo. Es un esquema de relevamiento, no un plano ejecutivo.</p>
+      <div class="vt-tools"><select id="vt-simbolo"><option value="libre">Trazo libre</option><option value="T1">Toma simple</option><option value="T2">Toma doble</option><option value="I">Interruptor</option><option value="L">Luminaria</option><option value="C">Caja</option><option value="Q">Tablero</option></select><button class="btn btn-outline btn-sm" type="button" onclick="vtLimpiarCroquis()">Limpiar croquis</button></div>
+      <canvas id="vt-croquis" width="900" height="420" aria-label="Área de croquis eléctrico" style="display:block;width:100%;height:auto;min-height:220px;background:#fff;border:1px solid var(--border);border-radius:10px;touch-action:none"></canvas>
+      <div class="vt-ayuda">Los símbolos son referencias gráficas editables; verificá su correspondencia con la documentación técnica aplicable.</div>
+    </div>
+
+    <div class="panel vt-materiales-panel">
+      <div class="panel-title">6 · Materiales, cantidades y compras</div>
+      <p class="vt-ayuda">Cargá materiales relevados o usá las sugerencias calculadas desde los recorridos. Las cantidades son estimativas y deben verificarse en obra.</p>
+      <div class="form-grid g3">
+        <div class="fld"><label>Material / descripción</label><input id="vt-mat-nombre" placeholder="Ej. Cable unipolar 2,5 mm²"></div>
+        <div class="fld"><label>Categoría</label><select id="vt-mat-cat"><option>Cables</option><option>Canalización</option><option>Cajas</option><option>Protecciones</option><option>Tomas/Mecanismos</option><option>Tableros</option><option>Iluminación</option><option>Industrial</option><option>Automatización</option><option>Consumibles</option><option>Otros</option></select></div>
+        <div class="fld"><label>Cantidad</label><input id="vt-mat-cant" type="number" min="0" step="0.1" placeholder="0"></div>
+        <div class="fld"><label>Unidad</label><select id="vt-mat-unidad"><option>unidad</option><option>m</option><option>rollo</option><option>caja</option><option>juego</option><option>kg</option><option>l</option></select></div>
+        <div class="fld"><label>Precio unitario ($)</label><input id="vt-mat-precio" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="fld"><label>Disponibilidad</label><select id="vt-mat-origen"><option value="comprar">Comprar</option><option value="cliente">Aporta cliente</option><option value="existente">Ya existe en obra</option></select></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" type="button" onclick="vtSugerirMateriales()">⚙ Sugerir desde circuitos</button>
+        <button class="btn btn-verde btn-sm" type="button" onclick="vtAgregarMaterial()">＋ Agregar material</button>
+      </div>
+      <div id="vt-lista-materiales" class="vt-lista"></div>
+      <div id="vt-resumen-materiales" class="vt-resumen"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" type="button" onclick="vtCrearPresupuesto()">↗ Pasar materiales a presupuesto</button>
+        <button class="btn btn-outline" type="button" onclick="vtExportarInforme()">📄 Informe técnico imprimible</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">7 · Fotografías y cierre</div>
+      <div class="fld"><label>Fotos del ambiente / hallazgos</label><input id="vt-fotos" type="file" accept="image/*" multiple></div>
+      <div class="fld"><label>Observaciones finales</label><textarea id="vt-cierre" placeholder="Pendientes, recomendaciones y próximos pasos…"></textarea></div>
+      <div class="btn-row"><button class="btn btn-outline" type="button" onclick="vtAgregarAmbiente()">＋ Guardar ambiente y continuar</button><button class="btn btn-verde" type="button" onclick="vtGuardarVisita()">💾 Guardar visita</button><button class="btn btn-outline" type="button" onclick="vtNuevaVisita()">Nueva visita</button></div>
     </div>
   </div>
 
