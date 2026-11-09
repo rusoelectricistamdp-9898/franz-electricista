@@ -835,3 +835,140 @@ input,select,textarea{border-radius:8px;min-height:42px}
 #pg-visita .vt-mat-canal-selectores label{display:block;font-size:.7rem;font-weight:700;color:var(--muted2)}
 #pg-visita .vt-mat-canal-selectores select{display:block;width:100%;margin-top:3px;min-width:0;font-size:.78rem;min-height:38px}
 @media(max-width:600px){#pg-visita .vt-mat-canal-selectores{grid-template-columns:1fr}}
+
+/* ==========================================================
+   ETAPA 6 — REDISEÑO TÁCTICO INDUSTRIAL / RESPONSIVE
+   Capa visual adicional: no modifica lógica ni datos.
+========================================================== */
+:root{
+  --bg:#151b17;
+  --bg2:#1d261f;
+  --bg3:#273329;
+  --bg4:#344333;
+  --verde:#b5c783;
+  --verde-dark:#91a765;
+  --verde-g:rgba(181,199,131,.13);
+  --border:rgba(181,199,131,.19);
+  --border2:rgba(181,199,131,.34);
+  --text:#edf0e6;
+  --muted:#8e9a89;
+  --muted2:#b8c1ae;
+  --amber:#e2b65d;
+  --red:#e16d63;
+  --cyan:#80c7d4;
+}
+html{background:var(--bg);}
+body{background:radial-gradient(ellipse at 80% 0%,rgba(126,150,91,.09),transparent 38%),var(--bg);}
+body::before{background-size:56px 56px;opacity:.65;}
+#app-container{min-height:100vh;}
+.sidebar{
+  width:258px;
+  background:linear-gradient(180deg,#202a22 0%,#19221c 100%);
+  border-right:1px solid rgba(181,199,131,.24);
+  box-shadow:8px 0 28px rgba(0,0,0,.13);
+}
+.sb-logo{min-height:82px;padding:16px 18px;background:rgba(0,0,0,.12);}
+.sb-logo-img-wrap{flex-shrink:0;}
+.sb-brand{font-size:.82rem;letter-spacing:.09em;color:#d0dfa0;}
+.sb-sub{font-size:.7rem;color:#a8b49c;}
+.sb-nav{padding:12px 9px;}
+.menu-btn{
+  min-height:43px;margin:3px 0;padding:10px 13px;border-left:3px solid transparent;
+  border-radius:7px;font-size:.83rem;letter-spacing:.01em;color:#c0c9b9;
+}
+.menu-btn .ico{font-size:1.05rem;}
+.menu-btn.active{background:linear-gradient(90deg,rgba(181,199,131,.2),rgba(181,199,131,.06));color:#f2f4e9;border-left-color:#d0dfa0;box-shadow:inset 0 0 0 1px rgba(181,199,131,.09);}
+.menu-btn:hover{background:rgba(181,199,131,.11);color:#fff;border-left-color:#91a765;}
+.sb-footer{padding:14px 18px;line-height:1.65;color:#829080;}
+.main{min-width:0;background:transparent;}
+.page{width:100%;max-width:1680px;padding:25px clamp(16px,2.2vw,34px) 54px;}
+.ph{margin-bottom:22px;padding:0 0 17px;border-bottom:1px solid rgba(181,199,131,.23);}
+.ph h1{font-size:clamp(1.25rem,1.7vw,1.65rem);letter-spacing:.015em;color:#f3f4ed;}
+.ph p{font-size:.84rem;color:#aab5a2;line-height:1.5;margin-top:4px;}
+.panel,.card{
+  background:linear-gradient(145deg,rgba(32,43,34,.98),rgba(27,37,30,.98));
+  border:1px solid rgba(181,199,131,.22);border-radius:13px;
+  box-shadow:0 5px 18px rgba(0,0,0,.10);
+}
+.panel{padding:19px 20px;margin-bottom:16px;}
+.panel::before{height:2px;background:linear-gradient(90deg,#a9bf75,rgba(169,191,117,.08) 68%,transparent);opacity:.7;}
+.panel-title{font-size:.76rem;letter-spacing:.11em;color:#d4dfb3;margin-bottom:16px;}
+.panel-title::after{background:linear-gradient(90deg,rgba(181,199,131,.28),transparent);}
+.card{padding:17px;}
+.card h3{font-size:.72rem;letter-spacing:.08em;color:#aeb9a5;}
+.card span{font-size:1.9rem;color:#c5d694;}
+.fld{gap:6px;min-width:0;}
+label{font-size:.69rem;letter-spacing:.055em;color:#c0c9b7;}
+input,select,textarea{
+  background:#29362c;border:1px solid rgba(181,199,131,.24);border-radius:8px;
+  color:#f0f2e9;min-height:43px;padding:10px 12px;
+}
+input:hover,select:hover,textarea:hover{border-color:rgba(181,199,131,.43);}
+input:focus,select:focus,textarea:focus{border-color:#c5d694;box-shadow:0 0 0 3px rgba(181,199,131,.14);}
+input::placeholder,textarea::placeholder{color:#819080;}
+textarea{line-height:1.5;}
+.btn{min-height:42px;border-radius:8px;padding:10px 15px;font-size:.8rem;letter-spacing:.025em;}
+.btn-verde{background:#b5c783;color:#172017;}
+.btn-verde:hover{background:#c7d99a;}
+.btn-outline{border-color:#9fb675;color:#d2e2a6;}
+.badge{border-radius:5px;letter-spacing:.04em;}
+hr{border:0;border-top:1px solid var(--border);}
+/* Estados semafóricos consistentes */
+.status-ok,.estado-ok{color:#b9d88a;}
+.status-warning,.estado-revision{color:#e2b65d;}
+.status-error,.estado-falla{color:#ef8278;}
+/* Croquis y zonas de trabajo */
+#vt-croquis{border:1px solid rgba(181,199,131,.28);border-radius:10px;background:#111914;}
+.vt-compartir-panel,.vt-compartir-estado,.vt-compartir-resumen{border-radius:10px;}
+.vt-compartir-opciones .vt-compartir-opcion{border-radius:9px;}
+/* Tablas y listas: lectura rápida */
+table{border-collapse:separate;border-spacing:0;max-width:100%;}
+th{color:#d7e2b9;letter-spacing:.045em;}
+td,th{padding:9px 10px;border-bottom:1px solid rgba(181,199,131,.13);}
+/* Tablet */
+@media(min-width:769px) and (max-width:1100px){
+  .sidebar{width:224px;}
+  .page{padding:22px 18px 44px;}
+  .panel{padding:16px;}
+}
+/* Celular: controles táctiles y lectura en una columna */
+@media(max-width:768px){
+  body{display:block;overflow-x:hidden;overflow-y:auto;}
+  .sidebar{width:min(290px,86vw);box-shadow:14px 0 36px rgba(0,0,0,.38);}
+  .main{width:100%;height:auto;overflow:visible;}
+  .page{padding:66px 12px 34px;}
+  .ph{align-items:flex-start;margin-bottom:16px;padding-bottom:13px;}
+  .ph h1{font-size:1.22rem;line-height:1.3;}
+  .ph p{font-size:.78rem;}
+  .panel{padding:14px 13px;border-radius:11px;margin-bottom:12px;}
+  .panel-title{font-size:.71rem;letter-spacing:.075em;margin-bottom:13px;line-height:1.45;}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  .card{padding:13px;min-width:0;}
+  .card span{font-size:1.55rem;}
+  .form-grid.g2,.form-grid.g3{grid-template-columns:minmax(0,1fr);}
+  input,select,textarea{min-height:46px;font-size:16px;}
+  textarea{min-height:88px;}
+  .btn,.btn-row .btn{min-height:46px;white-space:normal;}
+  .btn-row{flex-direction:column;align-items:stretch;}
+  .btn-row .btn{width:100%;justify-content:center;}
+  .vt-tools>*{max-width:100%;}
+  #pg-visita .vt-tools>*{min-width:0!important;width:100%;}
+  #pg-visita .vt-material-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  #pg-visita .vt-material-row .vt-mat-desc{grid-column:1/-1;}
+  #pg-visita .vt-material-row button{grid-column:1/-1;width:100%;}
+  #pg-visita .vt-mat-canal-selectores{grid-template-columns:1fr;max-width:none;}
+  .search-bar{gap:8px;}
+  .search-bar input,.search-bar select{width:100%;min-width:0;}
+  .vt-compartir-opciones{grid-template-columns:1fr;}
+  .vt-compartir-opciones .vt-compartir-opcion{min-height:62px;}
+  .vt-item{gap:9px;}
+  table{display:block;overflow-x:auto;white-space:nowrap;}
+}
+@media(max-width:380px){
+  .page{padding-left:9px;padding-right:9px;}
+  .panel{padding:12px 10px;}
+  .cards{grid-template-columns:1fr;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+}
