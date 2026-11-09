@@ -2076,22 +2076,57 @@ function vtActualizarHerramientasCroquis(){
   if(sel){sel.innerHTML=VT_CIRCUITOS.map(c=>`<option value="${c.id}">${escapeHtml(c.codigo||"C")} · ${escapeHtml(c.tipo)}</option>`).join("")||'<option value="">Agregá primero un circuito</option>';if(VT_CIRCUITOS.some(c=>c.id===actual))sel.value=actual;}
   const ley=get("vt-leyenda-circuitos");
   if(ley)ley.innerHTML=VT_CIRCUITOS.map(c=>`<span class="vt-leyenda-item"><i style="background:${vtColorCircuito(c)}"></i>${escapeHtml(c.codigo||"C")} – ${escapeHtml(c.tipo)}</span>`).join("")+(VT_TRAZOS.some(t=>t.compartido)?`<span class="vt-leyenda-item"><i style="background:${VT_COLOR_COMPARTIDO}"></i>Canalización compartida</span>`:"");
+  vtActualizarEstadoCompartir();
 }
 function vtAlternarCompartir(){
   if(VT_CIRCUITOS.length<2){toast("Necesitás al menos dos circuitos para compartir una canalización","yellow");return;}
   const panel=get("vt-compartir-panel");if(!panel)return;
   panel.hidden=!panel.hidden;
-  if(!panel.hidden){const cont=get("vt-compartir-opciones");if(cont)cont.innerHTML=VT_CIRCUITOS.map(c=>`<label><input type="checkbox" value="${c.id}" ${VT_COMPARTIR_ACTIVOS.includes(c.id)?"checked":""}><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${vtColorCircuito(c)}"></span>${escapeHtml(c.codigo||"C")} – ${escapeHtml(c.tipo)}</label>`).join("");}
+  if(!panel.hidden){
+    const cont=get("vt-compartir-opciones");
+    if(cont)cont.innerHTML=VT_CIRCUITOS.map(c=>{
+      const marcado=VT_COMPARTIR_ACTIVOS.includes(c.id);
+      return `<label class="vt-compartir-opcion ${marcado?"seleccionada":""}" data-circuito="${c.id}">
+        <input type="checkbox" value="${c.id}" ${marcado?"checked":""} onchange="vtCambioSeleccionCompartir(this)">
+        <span class="vt-check-visual" aria-hidden="true">${marcado?"✓":""}</span>
+        <i style="background:${vtColorCircuito(c)}"></i>
+        <span class="vt-opcion-texto"><strong>${escapeHtml(c.codigo||"C")}</strong> – ${escapeHtml(c.tipo)}</span>
+        <span class="vt-estado-opcion">${marcado?"Seleccionado":"Tocar para seleccionar"}</span>
+      </label>`;
+    }).join("");
+    vtActualizarEstadoCompartir();
+  }
+}
+function vtCambioSeleccionCompartir(input){
+  const label=input?.closest(".vt-compartir-opcion");
+  if(label){label.classList.toggle("seleccionada",input.checked);const check=label.querySelector(".vt-check-visual");const estado=label.querySelector(".vt-estado-opcion");if(check)check.textContent=input.checked?"✓":"";if(estado)estado.textContent=input.checked?"Seleccionado":"Tocar para seleccionar";}
+  vtActualizarEstadoCompartir();
+}
+function vtActualizarEstadoCompartir(){
+  const cont=get("vt-compartir-opciones");
+  const ids=Array.from(cont?.querySelectorAll('input[type="checkbox"]:checked')||[]).map(x=>x.value);
+  const estado=get("vt-compartir-estado");
+  if(estado)estado.textContent=ids.length?`${ids.length} seleccionado(s): ${VT_CIRCUITOS.filter(c=>ids.includes(c.id)).map(c=>c.codigo).join(" + ")}`:"Todavía no seleccionaste circuitos.";
+  const resumen=get("vt-compartir-resumen");
+  if(resumen){
+    if(VT_COMPARTIR_ACTIVOS.length>=2){const nombres=VT_CIRCUITOS.filter(c=>VT_COMPARTIR_ACTIVOS.includes(c.id)).map(c=>c.codigo).join(" + ");resumen.textContent=`Canalización compartida preparada: ${nombres}`;resumen.classList.add("activo");}
+    else{resumen.textContent="Modo individual: seleccioná circuitos para compartir un tramo.";resumen.classList.remove("activo");}
+  }
 }
 function vtAplicarCompartir(){
   const ids=Array.from(get("vt-compartir-opciones")?.querySelectorAll('input[type="checkbox"]:checked')||[]).map(x=>x.value);
-  if(ids.length<2){toast("Seleccioná por lo menos dos circuitos","yellow");return;}
+  if(ids.length<2){toast("Marcá al menos dos casillas para combinar circuitos","yellow");return;}
   VT_COMPARTIR_ACTIVOS=ids;const panel=get("vt-compartir-panel");if(panel)panel.hidden=true;
   const nombres=VT_CIRCUITOS.filter(c=>ids.includes(c.id)).map(c=>c.codigo).join(" + ");
   const b=get("vt-btn-compartir");if(b)b.textContent=`⇄ Compartiendo: ${nombres}`;
+  vtActualizarEstadoCompartir();
   toast(`Próximo recorrido compartido: ${nombres}`);
 }
-function vtCancelarCompartir(){VT_COMPARTIR_ACTIVOS=[];const p=get("vt-compartir-panel");if(p)p.hidden=true;const b=get("vt-btn-compartir");if(b)b.textContent="⇄ Compartir canalización";}
+function vtCancelarCompartir(){
+  VT_COMPARTIR_ACTIVOS=[];const p=get("vt-compartir-panel");if(p)p.hidden=true;
+  const b=get("vt-btn-compartir");if(b)b.textContent="⇄ Compartir canalización";
+  const resumen=get("vt-compartir-resumen");if(resumen){resumen.textContent="Modo individual: seleccioná circuitos para compartir un tramo.";resumen.classList.remove("activo");}
+}
 function vtPrepararCroquis(){
   const cv=get("vt-croquis");if(!cv||cv.dataset.ready)return;cv.dataset.ready="1";
   const ctx=cv.getContext("2d");let activo=false,puntos=[];

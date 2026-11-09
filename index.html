@@ -246,9 +246,11 @@
       <div id="vt-compartir-panel" class="vt-compartir-panel" hidden>
         <strong>Seleccioná los circuitos que compartirán el próximo tramo</strong>
         <div id="vt-compartir-opciones" class="vt-compartir-opciones"></div>
+        <div id="vt-compartir-estado" class="vt-compartir-estado" aria-live="polite">Todavía no seleccionaste circuitos.</div>
         <div class="btn-row"><button class="btn btn-verde btn-sm" type="button" onclick="vtAplicarCompartir()">Aplicar selección</button><button class="btn btn-outline btn-sm" type="button" onclick="vtCancelarCompartir()">Cancelar</button></div>
         <small>El tramo compartido se dibuja con un color único; los circuitos mantienen sus colores e identidad en la leyenda.</small>
       </div>
+      <div id="vt-compartir-resumen" class="vt-compartir-resumen" aria-live="polite">Modo individual: seleccioná circuitos para compartir un tramo.</div>
       <div id="vt-leyenda-circuitos" class="vt-leyenda-circuitos"></div>
       <canvas id="vt-croquis" width="900" height="420" aria-label="Área de croquis eléctrico" style="display:block;width:100%;height:auto;min-height:220px;background:#fff;border:1px solid var(--border);border-radius:10px;touch-action:none"></canvas>
       <div class="vt-ayuda">El color violeta identifica tramos compartidos. Es un croquis de relevamiento: la compatibilidad, ocupación y protección de conductores deben verificarse técnicamente antes de ejecutar.</div>
