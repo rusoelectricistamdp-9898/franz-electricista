@@ -1224,3 +1224,115 @@ html[data-theme="claro"] .home-stats .stat-card strong{color:var(--text);}
   .vt-croquis-clear-options { grid-template-columns:minmax(0,1fr); }
   .vt-croquis-clear-actions .btn { flex:1 1 100%; }
 }
+
+/* ==========================================================
+   FRANZ — FIX DEFINITIVO DE SCROLL EN MENÚ LATERAL (PC)
+   La cabecera y el pie quedan fijos; SOLO la lista de opciones
+   tiene scroll propio. La rueda del mouse actúa sobre el menú.
+========================================================== */
+@media (min-width: 769px) {
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden !important;
+  }
+
+  body {
+    display: block !important;
+  }
+
+  #app-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #app-container > #sidebar,
+  #app-container > .sidebar {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 1400 !important;
+    display: flex !important;
+    flex: 0 0 264px !important;
+    flex-direction: column !important;
+    width: 264px !important;
+    min-width: 264px !important;
+    max-width: 264px !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  #app-container > .sidebar > .sb-logo {
+    flex: 0 0 auto !important;
+  }
+
+  #app-container > .sidebar > .sb-nav {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(181,199,151,.75) #182019;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #app-container > .sidebar > .sb-nav::-webkit-scrollbar {
+    width: 10px;
+  }
+  #app-container > .sidebar > .sb-nav::-webkit-scrollbar-track {
+    background: #182019;
+  }
+  #app-container > .sidebar > .sb-nav::-webkit-scrollbar-thumb {
+    background: rgba(181,199,151,.68);
+    border: 2px solid #182019;
+    border-radius: 10px;
+  }
+  #app-container > .sidebar > .sb-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(205,220,164,.95);
+  }
+
+  #app-container > .sidebar > .sb-footer {
+    flex: 0 0 auto !important;
+  }
+
+  #app-container > .main {
+    position: relative !important;
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    margin-left: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  #app-container > #sidebar,
+  #app-container > .sidebar {
+    flex-basis: 224px !important;
+    width: 224px !important;
+    min-width: 224px !important;
+    max-width: 224px !important;
+  }
+}
+
