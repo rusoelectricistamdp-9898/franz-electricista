@@ -45,15 +45,19 @@
       </div>
     </div>
     <nav class="sb-nav">
+      <div class="nav-caption">ESPACIO DE TRABAJO</div>
       <button class="menu-btn active" onclick="ir('dashboard')"><span class="ico">📊</span> Dashboard</button>
       <button class="menu-btn" onclick="ir('clientes')"><span class="ico">👤</span> Clientes</button>
       <button class="menu-btn" onclick="ir('obras')"><span class="ico">🏗</span> Obras</button>
+      <div class="nav-caption">TRABAJO EN CAMPO</div>
       <button class="menu-btn" onclick="ir('visita')"><span class="ico">🧰</span> Visita técnica</button>
       <button class="menu-btn" onclick="ir('materiales')"><span class="ico">⚡</span> Materiales</button>
       <button class="menu-btn" onclick="ir('componentes')"><span class="ico">🔌</span> Componentes</button>
       <button class="menu-btn" onclick="ir('plantillas')"><span class="ico">📋</span> Plantillas</button>
+      <div class="nav-caption">DISEÑO Y CÁLCULO</div>
       <button class="menu-btn" onclick="ir('tableros')"><span class="ico">📦</span> Tableros</button>
       <button class="menu-btn" onclick="ir('presupuestos')"><span class="ico">💰</span> Presupuestos</button>
+      <div class="nav-caption">ADMINISTRACIÓN</div>
       <button class="menu-btn" onclick="ir('facturas')"><span class="ico">🧾</span> Facturas</button>
       <button class="menu-btn" onclick="ir('relevamiento')"><span class="ico">📄</span> Relevamientos</button>
       <button class="menu-btn" onclick="ir('calculadoras')"><span class="ico">📐</span> Calculadoras AEA</button>
@@ -68,53 +72,52 @@
   <!-- MAIN -->
   <main class="main">
 
-  <!-- ═══ DASHBOARD ═══ -->
+  <!-- ═══ INICIO / CENTRO DE TRABAJO ═══ -->
   <div class="page active" id="pg-dashboard">
-    <div class="ph">
-      <div><h1>📊 Dashboard</h1><p>Centro de gestión técnica Franz Electricidad</p></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="sincronizarTodo()" title="Sincronizar con la nube">☁ Sync</button>
-        <select onchange="cambiarTema(this.value)" style="width:auto;padding:6px 10px;font-size:.8rem">
-          <option value="militar">🪖 Táctico eléctrico</option>
-          <option value="default">🟢 Verde</option>
-          <option value="industrial">🟠 Industrial</option>
-          <option value="electrico">🔵 Eléctrico</option>
-        </select>
+    <section class="home-hero">
+      <div class="hero-copy">
+        <span class="eyebrow"><i></i> CENTRO DE OPERACIONES · FRANZ</span>
+        <h1>Tu trabajo eléctrico,<br><em>más simple.</em></h1>
+        <p>Organizá visitas, relevá instalaciones y convertí el trabajo en materiales y presupuestos desde un mismo lugar.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary-hero" onclick="ir('visita')">＋ Iniciar visita técnica</button>
+          <button class="btn btn-ghost-hero" onclick="ir('presupuestos')">Crear presupuesto <span>→</span></button>
+        </div>
       </div>
-    </div>
-    <div class="cards">
-      <div class="card"><h3>Clientes</h3><span id="st-clientes">0</span></div>
-      <div class="card"><h3>Obras</h3><span id="st-obras">0</span></div>
-      <div class="card"><h3>Presupuestos</h3><span id="st-presupuestos">0</span></div>
-      <div class="card"><h3>Materiales</h3><span id="st-materiales">0</span></div>
-      <div class="card"><h3>Tableros</h3><span id="st-tableros">0</span></div>
-      <div class="card"><h3>Facturación</h3><span id="st-facturacion">0</span></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">🚀 Accesos rápidos</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
-        <button class="btn btn-verde" onclick="ir('presupuestos')">💰 Nuevo presupuesto</button>
-        <button class="btn btn-outline" onclick="ir('clientes')">👤 Nuevo cliente</button>
-        <button class="btn btn-outline" onclick="ir('obras')">🏗 Nueva obra</button>
-        <button class="btn btn-verde" onclick="ir('visita')">🧰 Iniciar visita técnica</button>
-        <button class="btn btn-outline" onclick="ir('plantillas')">📋 Usar plantilla</button>
-        <button class="btn btn-outline" onclick="ir('calculadoras')">📐 Calculadora AEA</button>
-        <button class="btn btn-outline" onclick="ir('relevamiento')">📄 Relevamiento</button>
+      <div class="hero-mark" aria-hidden="true"><div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div><div class="hero-bolt">⚡</div><span>INSTALACIONES<br>· INDUSTRIA · SERVICIO</span></div>
+      <div class="hero-status"><b></b> ESPACIO DE TRABAJO LISTO</div>
+    </section>
+
+    <section class="home-section">
+      <div class="section-heading"><div><span class="eyebrow">TU ACTIVIDAD</span><h2>Resumen de gestión</h2></div><button class="btn btn-outline btn-sm" onclick="sincronizarTodo()">☁ Sincronizar</button></div>
+      <div class="cards home-stats">
+        <div class="card stat-card"><span class="stat-icon">♙</span><div><small>CLIENTES</small><strong id="st-clientes">0</strong></div><span class="stat-note">Registrados</span></div>
+        <div class="card stat-card"><span class="stat-icon">⌂</span><div><small>OBRAS</small><strong id="st-obras">0</strong></div><span class="stat-note">En cartera</span></div>
+        <div class="card stat-card"><span class="stat-icon">▤</span><div><small>PRESUPUESTOS</small><strong id="st-presupuestos">0</strong></div><span class="stat-note">Generados</span></div>
+        <div class="card stat-card"><span class="stat-icon">⚡</span><div><small>MATERIALES</small><strong id="st-materiales">0</strong></div><span class="stat-note">En catálogo</span></div>
+        <div class="card stat-card"><span class="stat-icon">▦</span><div><small>TABLEROS</small><strong id="st-tableros">0</strong></div><span class="stat-note">Registrados</span></div>
+        <div class="card stat-card"><span class="stat-icon">＄</span><div><small>FACTURACIÓN</small><strong id="st-facturacion">0</strong></div><span class="stat-note">Acumulada</span></div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">⚡ Normas AEA 90364</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.8rem;color:var(--muted2)">
-        <div>✅ Diferencial 30mA obligatorio por circuito</div>
-        <div>✅ Separar iluminación / tomas / fuerza</div>
-        <div>✅ Sistema TT con PAT (jabalina)</div>
-        <div>✅ Conductores normalizados IRAM NM247-3</div>
-        <div>✅ Protección termomagnética por circuito</div>
-        <div>✅ Identificación de conductores por color</div>
-        <div>✅ Gabinetes con IP adecuado al ambiente</div>
-        <div>✅ Selectividad entre protecciones</div>
+    </section>
+
+    <section class="home-section">
+      <div class="section-heading"><div><span class="eyebrow">FLUJO DE TRABAJO</span><h2>¿Qué necesitás hacer?</h2><p>Entrá directamente a la tarea. Franz conecta la información entre módulos.</p></div></div>
+      <div class="workflow-grid">
+        <button class="work-card work-featured" onclick="ir('visita')"><span class="work-icon">⌖</span><span class="work-kicker">01 · EN OBRA</span><strong>Visita técnica</strong><small>Relevá ambientes, circuitos, canalizaciones y observaciones.</small><span class="work-link">Comenzar visita <b>→</b></span></button>
+        <button class="work-card" onclick="ir('clientes')"><span class="work-icon">♙</span><span class="work-kicker">02 · GESTIÓN</span><strong>Clientes y obras</strong><small>Centralizá contactos, direcciones y trabajos.</small><span class="work-link">Administrar <b>→</b></span></button>
+        <button class="work-card" onclick="ir('tableros')"><span class="work-icon">▦</span><span class="work-kicker">03 · DISEÑO</span><strong>Tableros eléctricos</strong><small>Organizá protecciones, circuitos y componentes.</small><span class="work-link">Abrir tableros <b>→</b></span></button>
+        <button class="work-card" onclick="ir('materiales')"><span class="work-icon">⚡</span><span class="work-kicker">04 · RECURSOS</span><strong>Materiales</strong><small>Buscá componentes y prepará lo necesario para la obra.</small><span class="work-link">Ver materiales <b>→</b></span></button>
+        <button class="work-card" onclick="ir('presupuestos')"><span class="work-icon">＄</span><span class="work-kicker">05 · COSTOS</span><strong>Presupuestos</strong><small>Convertí el relevamiento en una propuesta económica.</small><span class="work-link">Crear presupuesto <b>→</b></span></button>
+        <button class="work-card" onclick="ir('calculadoras')"><span class="work-icon">⌁</span><span class="work-kicker">06 · INGENIERÍA</span><strong>Cálculo y normativa</strong><small>Consultá herramientas técnicas y verificaciones.</small><span class="work-link">Ir a herramientas <b>→</b></span></button>
+        <button class="work-card" onclick="ir('omisiones')"><span class="work-icon">△</span><span class="work-kicker">07 · CONTROL</span><strong>Inspecciones</strong><small>Identificá observaciones, omisiones y pendientes.</small><span class="work-link">Revisar <b>→</b></span></button>
+        <button class="work-card" onclick="ir('compras')"><span class="work-icon">▣</span><span class="work-kicker">08 · COMPRAS</span><strong>Lista de compras</strong><small>Reuní los materiales necesarios para ejecutar el trabajo.</small><span class="work-link">Preparar pedido <b>→</b></span></button>
       </div>
-    </div>
+    </section>
+
+    <section class="home-bottom-grid">
+      <div class="panel home-tip"><div class="panel-title">✦ Un solo flujo, menos carga doble</div><p>Empezá por la visita técnica. Los datos que cargues pueden servir como base para el relevamiento, la selección de materiales y el presupuesto.</p></div>
+      <div class="panel home-standards"><div class="panel-title">SEGURIDAD Y CRITERIO TÉCNICO</div><p>Las verificaciones normativas deben realizarse según el tipo de instalación, las condiciones del lugar y la reglamentación aplicable.</p><button class="btn btn-outline btn-sm" onclick="ir('calculadoras')">Abrir herramientas técnicas →</button></div>
+    </section>
   </div>
 
   <!-- ═══ CLIENTES ═══ -->
