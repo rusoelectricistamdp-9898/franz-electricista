@@ -2086,7 +2086,7 @@ function vtAgregarCircuito(){
 }
 function vtEliminar(tipo,id){
   if(tipo==="ambiente")VT_AMBIENTES=VT_AMBIENTES.filter(x=>x.id!==id);
-  else {VT_CIRCUITOS=VT_CIRCUITOS.filter(x=>x.id!==id);VT_TRAZOS=VT_TRAZOS.filter(t=>!(t.circuitos||[]).includes(id));VT_COMPARTIR_ACTIVOS=VT_COMPARTIR_ACTIVOS.filter(x=>x!==id);vtRedibujarCroquis();vtActualizarHerramientasCroquis();}
+  else {const antes=vtCroquisSnapshot();VT_CIRCUITOS=VT_CIRCUITOS.filter(x=>x.id!==id);VT_TRAZOS=VT_TRAZOS.filter(t=>!(t.circuitos||[]).includes(id));vtCroquisRegistrarCambio(antes);VT_COMPARTIR_ACTIVOS=VT_COMPARTIR_ACTIVOS.filter(x=>x!==id);vtRedibujarCroquis();vtActualizarHerramientasCroquis();}
   vtRenderListas();
 }
 function vtRenderListas(){
@@ -2152,23 +2152,225 @@ function vtCancelarCompartir(){
   const resumen=get("vt-compartir-resumen");if(resumen){resumen.textContent="Modo individual: seleccioná circuitos para compartir un tramo.";resumen.classList.remove("activo");}
 }
 let VT_CROQUIS_UNDO=[], VT_CROQUIS_REDO=[];
-function vtCroquisSnapshot(){return JSON.stringify(VT_TRAZOS);}
-function vtCroquisGuardarPaso(){VT_CROQUIS_UNDO.push(vtCroquisSnapshot());if(VT_CROQUIS_UNDO.length>100)VT_CROQUIS_UNDO.shift();VT_CROQUIS_REDO=[];vtActualizarHistorialCroquis();}
-function vtActualizarHistorialCroquis(){const u=get("vt-croquis-undo"),r=get("vt-croquis-redo");if(u)u.disabled=!VT_CROQUIS_UNDO.length;if(r)r.disabled=!VT_CROQUIS_REDO.length;}
-function vtCroquisDeshacer(){if(!VT_CROQUIS_UNDO.length){toast("No hay más acciones para deshacer","yellow");return;}VT_CROQUIS_REDO.push(vtCroquisSnapshot());VT_TRAZOS=JSON.parse(VT_CROQUIS_UNDO.pop());vtRedibujarCroquis();vtActualizarHistorialCroquis();}
-function vtCroquisRehacer(){if(!VT_CROQUIS_REDO.length){toast("No hay acciones para rehacer","yellow");return;}VT_CROQUIS_UNDO.push(vtCroquisSnapshot());VT_TRAZOS=JSON.parse(VT_CROQUIS_REDO.pop());vtRedibujarCroquis();vtActualizarHistorialCroquis();}
-function vtLimpiarCroquis(){if(!VT_TRAZOS.length){toast("El croquis ya está vacío","yellow");return;}const opcion=prompt("¿Qué querés borrar?\n1 = Último elemento\n2 = Solo recorridos eléctricos\n3 = Solo símbolos (tomas, llaves, luminarias, cajas y tablero)\n4 = Solo paredes, habitaciones, puertas y ventanas\n5 = Todo el croquis\n\nCancelá para no borrar nada.");if(opcion===null)return;let filtro;switch(opcion.trim()){case"1":vtCroquisDeshacer();return;case"2":filtro=t=>t.kind==="path";break;case"3":filtro=t=>t.kind==="symbol";break;case"4":filtro=t=>["room","wall","opening"].includes(t.kind);break;case"5":filtro=()=>true;break;default:toast("No se realizó ningún cambio","yellow");return;}if(!VT_TRAZOS.some(filtro)){toast("No hay elementos de ese tipo para borrar","yellow");return;}vtCroquisGuardarPaso();VT_TRAZOS=VT_TRAZOS.filter(t=>!filtro(t));vtRedibujarCroquis();vtActualizarHistorialCroquis();toast("Elementos seleccionados eliminados. Podés deshacer.");}
-function vtPuntoMasCercanoSegmento(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy||1;const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l));const q={x:a.x+t*dx,y:a.y+t*dy};return{...q,t,dist:Math.hypot(p.x-q.x,p.y-q.y),angle:Math.atan2(dy,dx)};}
-function vtAjustarAElemento(p){let mejor=null;VT_TRAZOS.forEach((t,ti)=>{let segmentos=[];if(t.kind==="wall"&&t.points?.length>1)for(let i=1;i<t.points.length;i++)segmentos.push([t.points[i-1],t.points[i]]);if(t.kind==="room")segmentos=[ [{x:t.x,y:t.y},{x:t.x+t.w,y:t.y}], [{x:t.x+t.w,y:t.y},{x:t.x+t.w,y:t.y+t.h}], [{x:t.x+t.w,y:t.y+t.h},{x:t.x,y:t.y+t.h}], [{x:t.x,y:t.y+t.h},{x:t.x,y:t.y}] ];segmentos.forEach((ab,si)=>{const q=vtPuntoMasCercanoSegmento(p,ab[0],ab[1]);if(!mejor||q.dist<mejor.dist)mejor={...q,ti,si};});});return mejor&&mejor.dist<=38?mejor:null;}
-function vtPrepararCroquis(){
- const cv=get("vt-croquis");if(!cv||cv.dataset.ready)return;cv.dataset.ready="1";const ctx=cv.getContext("2d");let activo=false,puntos=[],inicio=null,previo=null,ultimoPunto=null;
- function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};}
- function dibujarElemento(t){ctx.save();ctx.lineCap="round";ctx.lineJoin="round";if(t.kind==="wall"||t.kind==="room"){ctx.strokeStyle="#263238";ctx.lineWidth=t.kind==="room"?7:8;if(t.kind==="room")ctx.strokeRect(t.x,t.y,t.w,t.h);else if(t.points?.length){ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(q=>ctx.lineTo(q.x,q.y));ctx.stroke();}}else if(t.kind==="opening"){const x=t.x,y=t.y,a=t.angle||0;ctx.translate(x,y);ctx.rotate(a);ctx.lineWidth=10;ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(-23,0);ctx.lineTo(23,0);ctx.stroke();ctx.lineWidth=3;ctx.strokeStyle=t.type==="door"?"#b45309":"#0284c7";if(t.type==="door"){ctx.beginPath();ctx.moveTo(-23,0);ctx.lineTo(-23,-30);ctx.arc(-23,0,30,-Math.PI/2,0);ctx.stroke();}else{ctx.beginPath();ctx.moveTo(-23,-7);ctx.lineTo(23,-7);ctx.moveTo(-23,7);ctx.lineTo(23,7);ctx.stroke();}ctx.fillStyle=t.type==="door"?"#92400e":"#0369a1";ctx.font="bold 12px Arial";ctx.fillText(t.type==="door"?"PUERTA":"VENTANA",-28,24);}ctx.restore();}
- cv.addEventListener("pointerdown",e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);const p=pos(e),tool=val("vt-simbolo");if(tool==="room"||tool==="wall"){activo=true;inicio=p;puntos=[p];previo=tool;vtCroquisGuardarPaso();return;}if(tool==="door"||tool==="window"){const snap=vtAjustarAElemento(p);if(!snap){toast("Acercá la puerta o ventana a una pared para que se adhiera","yellow");return;}vtCroquisGuardarPaso();VT_TRAZOS.push({kind:"opening",type:tool,x:snap.x,y:snap.y,angle:snap.angle,wallIndex:snap.ti,segmentIndex:snap.si});vtRedibujarCroquis();vtActualizarHistorialCroquis();return;}if(tool&&tool!=="libre"){const circuito=VT_CIRCUITOS.find(c=>c.id===val("vt-circuito-activo"));vtCroquisGuardarPaso();VT_TRAZOS.push({kind:"symbol",symbol:tool,x:p.x,y:p.y,circuitos:circuito?[circuito.id]:[]});vtRedibujarCroquis();vtActualizarHistorialCroquis();return;}const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:(val("vt-circuito-activo")?[val("vt-circuito-activo")]:[]);if(!ids.length){toast("Agregá y seleccioná un circuito antes de dibujar un recorrido eléctrico","yellow");return;}activo=true;puntos=[p];previo="path";vtCroquisGuardarPaso();});
- cv.addEventListener("pointermove",e=>{if(!activo)return;const p=pos(e);if(previo==="room"){ultimoPunto=p;vtRedibujarCroquis();dibujarElemento({kind:"room",x:Math.min(inicio.x,p.x),y:Math.min(inicio.y,p.y),w:Math.abs(p.x-inicio.x),h:Math.abs(p.y-inicio.y)});return;}if(previo==="wall"){puntos.push(p);vtRedibujarCroquis();dibujarElemento({kind:"wall",points:puntos});return;}puntos.push(p);vtRedibujarCroquis();const t={kind:"path",points:puntos,circuitos:VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:[val("vt-circuito-activo")].filter(Boolean),compartido:VT_COMPARTIR_ACTIVOS.length>=2};const c=VT_CIRCUITOS.find(x=>x.id===t.circuitos[0]);ctx.beginPath();ctx.moveTo(puntos[0].x,puntos[0].y);puntos.slice(1).forEach(q=>ctx.lineTo(q.x,q.y));ctx.strokeStyle=t.compartido?VT_COLOR_COMPARTIDO:vtColorCircuito(c||{});ctx.lineWidth=4;ctx.stroke();});
- const fin=()=>{if(!activo)return;activo=false;if(previo==="room"&&ultimoPunto){const t={kind:"room",x:Math.min(inicio.x,ultimoPunto.x),y:Math.min(inicio.y,ultimoPunto.y),w:Math.abs(ultimoPunto.x-inicio.x),h:Math.abs(ultimoPunto.y-inicio.y)};if(t.w>12&&t.h>12)VT_TRAZOS.push(t);}else if(previo==="wall"&&puntos.length>1)VT_TRAZOS.push({kind:"wall",points:puntos});else if(previo==="path"&&puntos.length>1){const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:[val("vt-circuito-activo")].filter(Boolean);VT_TRAZOS.push({kind:"path",points:puntos,circuitos:ids,compartido:ids.length>1});if(ids.length>1)vtCancelarCompartir();}previo=null;ultimoPunto=null;vtRedibujarCroquis();vtActualizarHerramientasCroquis();vtActualizarHistorialCroquis();};cv.addEventListener("pointerup",fin);cv.addEventListener("pointercancel",fin);vtActualizarHerramientasCroquis();vtActualizarHistorialCroquis();
+const VT_CROQUIS_MAX_HISTORIAL=100;
+function vtCroquisSnapshot(){return JSON.stringify(VT_TRAZOS||[]);}
+function vtCroquisRegistrarCambio(estadoAnterior){
+  const estadoActual=vtCroquisSnapshot();
+  if(estadoActual===estadoAnterior)return false;
+  VT_CROQUIS_UNDO.push(estadoAnterior);
+  if(VT_CROQUIS_UNDO.length>VT_CROQUIS_MAX_HISTORIAL)VT_CROQUIS_UNDO.shift();
+  VT_CROQUIS_REDO.length=0;
+  vtActualizarHistorialCroquis();
+  return true;
 }
-function vtRedibujarCroquis(){const cv=get("vt-croquis");if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);VT_TRAZOS.filter(t=>t.kind!=="opening").forEach(t=>{ctx.save();ctx.lineCap="round";ctx.lineJoin="round";if(t.kind==="room"){ctx.strokeStyle="#263238";ctx.lineWidth=7;ctx.strokeRect(t.x,t.y,t.w,t.h);}else if(t.kind==="wall"&&t.points?.length){ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.strokeStyle="#263238";ctx.lineWidth=8;ctx.stroke();}else if(t.kind==="path"&&t.points?.length){ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.strokeStyle=t.compartido?VT_COLOR_COMPARTIDO:vtColorCircuito(VT_CIRCUITOS.find(c=>c.id===t.circuitos?.[0])||{});ctx.lineWidth=4;ctx.stroke();if(t.compartido){const q=t.points[Math.floor(t.points.length/2)];ctx.font="bold 13px Arial";ctx.fillStyle=VT_COLOR_COMPARTIDO;ctx.fillText(VT_CIRCUITOS.filter(c=>t.circuitos.includes(c.id)).map(c=>c.codigo).join("+"),q.x+5,q.y-8);}}else if(t.kind==="symbol"){const c=VT_CIRCUITOS.find(x=>x.id===t.circuitos?.[0]);ctx.fillStyle=c?vtColorCircuito(c):"#172033";ctx.font="bold 20px Arial";ctx.fillText(({T1:"T",T2:"T×2",I:"I",L:"⊗",C:"□",Q:"▣"})[t.symbol]||"•",t.x-9,t.y+7);}ctx.restore();});VT_TRAZOS.filter(t=>t.kind==="opening").forEach(t=>{ctx.save();ctx.translate(t.x,t.y);ctx.rotate(t.angle||0);ctx.lineWidth=10;ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(-23,0);ctx.lineTo(23,0);ctx.stroke();ctx.lineWidth=3;ctx.strokeStyle=t.type==="door"?"#b45309":"#0284c7";if(t.type==="door"){ctx.beginPath();ctx.moveTo(-23,0);ctx.lineTo(-23,-30);ctx.arc(-23,0,30,-Math.PI/2,0);ctx.stroke();}else{ctx.beginPath();ctx.moveTo(-23,-7);ctx.lineTo(23,-7);ctx.moveTo(-23,7);ctx.lineTo(23,7);ctx.stroke();}ctx.fillStyle=t.type==="door"?"#92400e":"#0369a1";ctx.font="bold 12px Arial";ctx.fillText(t.type==="door"?"PUERTA":"VENTANA",-28,24);ctx.restore();});}
+function vtActualizarHistorialCroquis(){
+  const u=get("vt-croquis-undo"),r=get("vt-croquis-redo");
+  if(u){u.disabled=!VT_CROQUIS_UNDO.length;u.title=u.disabled?"No hay acciones para deshacer":"Deshacer el último cambio";}
+  if(r){r.disabled=!VT_CROQUIS_REDO.length;r.title=r.disabled?"No hay acciones para rehacer":"Rehacer el cambio";}
+}
+function vtCroquisDeshacer(){
+  if(!VT_CROQUIS_UNDO.length){toast("No hay más acciones para deshacer","yellow");return;}
+  VT_CROQUIS_REDO.push(vtCroquisSnapshot());
+  VT_TRAZOS=JSON.parse(VT_CROQUIS_UNDO.pop());
+  vtRedibujarCroquis();vtActualizarHistorialCroquis();
+  toast("Último cambio deshecho");
+}
+function vtCroquisRehacer(){
+  if(!VT_CROQUIS_REDO.length){toast("No hay acciones para rehacer","yellow");return;}
+  VT_CROQUIS_UNDO.push(vtCroquisSnapshot());
+  VT_TRAZOS=JSON.parse(VT_CROQUIS_REDO.pop());
+  vtRedibujarCroquis();vtActualizarHistorialCroquis();
+  toast("Cambio recuperado");
+}
+function vtLimpiarCroquis(abrir=true){
+  const panel=get("vt-croquis-clear-panel");
+  if(!panel)return;
+  if(abrir){
+    if(!VT_TRAZOS.length){toast("El croquis ya está vacío","yellow");return;}
+    panel.hidden=false;
+    panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+    return;
+  }
+  panel.hidden=true;
+}
+function vtSeleccionarTodoParaBorrar(marcar){
+  ["vt-clear-structure","vt-clear-openings","vt-clear-paths","vt-clear-symbols"].forEach(id=>{const el=get(id);if(el)el.checked=!!marcar;});
+}
+function vtAplicarBorradoCroquis(){
+  const panel=get("vt-croquis-clear-panel");
+  const borrarEstructura=!!get("vt-clear-structure")?.checked;
+  const borrarAberturas=!!get("vt-clear-openings")?.checked;
+  const borrarRecorridos=!!get("vt-clear-paths")?.checked;
+  const borrarSimbolos=!!get("vt-clear-symbols")?.checked;
+  if(!borrarEstructura&&!borrarAberturas&&!borrarRecorridos&&!borrarSimbolos){toast("Elegí al menos una categoría para borrar","yellow");return;}
+  const eliminar=t=>
+    (borrarEstructura&&(t.kind==="room"||t.kind==="wall"))||
+    (borrarAberturas&&t.kind==="opening")||
+    (borrarRecorridos&&t.kind==="path")||
+    (borrarSimbolos&&t.kind==="symbol");
+  if(!VT_TRAZOS.some(eliminar)){toast("No hay elementos en las categorías seleccionadas","yellow");return;}
+  const antes=vtCroquisSnapshot();
+  VT_TRAZOS=VT_TRAZOS.filter(t=>!eliminar(t));
+  vtCroquisRegistrarCambio(antes);
+  vtRedibujarCroquis();
+  if(panel)panel.hidden=true;
+  vtSeleccionarTodoParaBorrar(false);
+  toast("Elementos seleccionados borrados. Podés deshacer.");
+}
+function vtPuntoMasCercanoSegmento(p,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy||1;
+  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l));
+  const q={x:a.x+t*dx,y:a.y+t*dy};
+  return{...q,t,dist:Math.hypot(p.x-q.x,p.y-q.y),angle:Math.atan2(dy,dx)};
+}
+function vtAjustarAElemento(p){
+  let mejor=null;
+  VT_TRAZOS.forEach((t,ti)=>{
+    let segmentos=[];
+    if(t.kind==="wall"&&Array.isArray(t.points)&&t.points.length>1){
+      for(let i=1;i<t.points.length;i++)segmentos.push([t.points[i-1],t.points[i]]);
+    }
+    if(t.kind==="room"){
+      segmentos=[
+        [{x:t.x,y:t.y},{x:t.x+t.w,y:t.y}],
+        [{x:t.x+t.w,y:t.y},{x:t.x+t.w,y:t.y+t.h}],
+        [{x:t.x+t.w,y:t.y+t.h},{x:t.x,y:t.y+t.h}],
+        [{x:t.x,y:t.y+t.h},{x:t.x,y:t.y}]
+      ];
+    }
+    segmentos.forEach((ab,si)=>{
+      const q=vtPuntoMasCercanoSegmento(p,ab[0],ab[1]);
+      if(!mejor||q.dist<mejor.dist)mejor={...q,ti,si};
+    });
+  });
+  return mejor&&mejor.dist<=46?mejor:null;
+}
+function vtDibujarAbertura(ctx,t){
+  ctx.save();ctx.translate(t.x,t.y);ctx.rotate(t.angle||0);
+  // La línea blanca abre visualmente la pared; luego se dibuja el símbolo encima.
+  ctx.lineCap="butt";ctx.lineWidth=12;ctx.strokeStyle="#fff";
+  ctx.beginPath();ctx.moveTo(-24,0);ctx.lineTo(24,0);ctx.stroke();
+  ctx.lineWidth=2.5;ctx.strokeStyle=t.type==="door"?"#b45309":"#0284c7";
+  if(t.type==="door"){
+    ctx.beginPath();ctx.moveTo(-24,0);ctx.lineTo(-24,-31);ctx.arc(-24,0,31,-Math.PI/2,0);ctx.stroke();
+  }else{
+    ctx.beginPath();ctx.moveTo(-24,-7);ctx.lineTo(24,-7);ctx.moveTo(-24,7);ctx.lineTo(24,7);ctx.stroke();
+  }
+  ctx.fillStyle=t.type==="door"?"#92400e":"#0369a1";ctx.font="bold 11px Arial";
+  ctx.fillText(t.type==="door"?"PUERTA":"VENTANA",-27,23);
+  ctx.restore();
+}
+function vtPrepararCroquis(){
+  const cv=get("vt-croquis");
+  if(!cv||cv.dataset.ready)return;
+  cv.dataset.ready="1";
+  const ctx=cv.getContext("2d");
+  let activo=false,puntos=[],inicio=null,previo=null,ultimoPunto=null,estadoAntes=null;
+  function pos(e){
+    const r=cv.getBoundingClientRect();
+    return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};
+  }
+  function dibujarVistaPrevia(tool){
+    vtRedibujarCroquis();
+    if(tool==="room"&&ultimoPunto){
+      const x=Math.min(inicio.x,ultimoPunto.x),y=Math.min(inicio.y,ultimoPunto.y);
+      ctx.save();ctx.strokeStyle="#263238";ctx.lineWidth=7;
+      ctx.strokeRect(x,y,Math.abs(ultimoPunto.x-inicio.x),Math.abs(ultimoPunto.y-inicio.y));ctx.restore();
+    }else if((tool==="wall"||tool==="path")&&puntos.length){
+      const ids=tool==="path"?(VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:[val("vt-circuito-activo")].filter(Boolean)):[];
+      const c=VT_CIRCUITOS.find(x=>x.id===ids[0]);
+      ctx.save();ctx.beginPath();ctx.moveTo(puntos[0].x,puntos[0].y);
+      puntos.slice(1).forEach(q=>ctx.lineTo(q.x,q.y));
+      if(ultimoPunto&&puntos.length>1)ctx.lineTo(ultimoPunto.x,ultimoPunto.y);
+      ctx.strokeStyle=tool==="path"?(ids.length>1?VT_COLOR_COMPARTIDO:vtColorCircuito(c||{})):"#263238";
+      ctx.lineWidth=tool==="path"?4:8;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();ctx.restore();
+    }
+  }
+  cv.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    try{cv.setPointerCapture(e.pointerId);}catch(_){ }
+    const p=pos(e),tool=val("vt-simbolo");
+    if(tool==="room"||tool==="wall"||tool==="libre"){
+      if(tool==="libre"){
+        const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:(val("vt-circuito-activo")?[val("vt-circuito-activo")]:[]);
+        if(!ids.length){toast("Agregá y seleccioná un circuito antes de dibujar un recorrido eléctrico","yellow");return;}
+      }
+      activo=true;inicio=p;ultimoPunto=p;puntos=[p];previo=tool==="libre"?"path":tool;estadoAntes=vtCroquisSnapshot();return;
+    }
+    if(tool==="door"||tool==="window"){
+      const snap=vtAjustarAElemento(p);
+      if(!snap){toast("Acercá la puerta o ventana a una pared. Se va a ajustar al tramo más cercano.","yellow");return;}
+      const antes=vtCroquisSnapshot();
+      VT_TRAZOS.push({kind:"opening",type:tool,x:snap.x,y:snap.y,angle:snap.angle,wallIndex:snap.ti,segmentIndex:snap.si});
+      vtCroquisRegistrarCambio(antes);vtRedibujarCroquis();return;
+    }
+    if(tool){
+      const circuito=VT_CIRCUITOS.find(c=>c.id===val("vt-circuito-activo"));
+      const antes=vtCroquisSnapshot();
+      VT_TRAZOS.push({kind:"symbol",symbol:tool,x:p.x,y:p.y,circuitos:circuito?[circuito.id]:[]});
+      vtCroquisRegistrarCambio(antes);vtRedibujarCroquis();return;
+    }
+  });
+  cv.addEventListener("pointermove",e=>{
+    if(!activo)return;
+    const p=pos(e);ultimoPunto=p;
+    if(previo==="wall"||previo==="path"){
+      const ultimo=puntos[puntos.length-1];
+      if(!ultimo||Math.hypot(p.x-ultimo.x,p.y-ultimo.y)>2)puntos.push(p);
+    }
+    dibujarVistaPrevia(previo);
+  });
+  const finalizar=e=>{
+    if(!activo)return;
+    if(e&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY)){
+      const p=pos(e);ultimoPunto=p;
+      if((previo==="wall"||previo==="path")&&puntos.length){
+        const ultimo=puntos[puntos.length-1];
+        if(Math.hypot(p.x-ultimo.x,p.y-ultimo.y)>2)puntos.push(p);
+      }
+    }
+    activo=false;
+    if(previo==="room"&&ultimoPunto){
+      const t={kind:"room",x:Math.min(inicio.x,ultimoPunto.x),y:Math.min(inicio.y,ultimoPunto.y),w:Math.abs(ultimoPunto.x-inicio.x),h:Math.abs(ultimoPunto.y-inicio.y)};
+      if(t.w>12&&t.h>12)VT_TRAZOS.push(t);
+    }else if(previo==="wall"&&puntos.length>1){
+      VT_TRAZOS.push({kind:"wall",points:puntos.map(q=>({x:q.x,y:q.y}))});
+    }else if(previo==="path"&&puntos.length>1){
+      const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:[val("vt-circuito-activo")].filter(Boolean);
+      VT_TRAZOS.push({kind:"path",points:puntos.map(q=>({x:q.x,y:q.y})),circuitos:ids,compartido:ids.length>1});
+      if(ids.length>1)vtCancelarCompartir();
+    }
+    if(estadoAntes!==null)vtCroquisRegistrarCambio(estadoAntes);
+    puntos=[];inicio=null;previo=null;ultimoPunto=null;estadoAntes=null;
+    vtRedibujarCroquis();vtActualizarHerramientasCroquis();vtActualizarHistorialCroquis();
+  };
+  cv.addEventListener("pointerup",finalizar);
+  cv.addEventListener("pointercancel",finalizar);
+  vtActualizarHistorialCroquis();
+  vtRedibujarCroquis();
+}
+function vtRedibujarCroquis(){
+  const cv=get("vt-croquis");if(!cv)return;
+  const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+  VT_TRAZOS.filter(t=>t.kind!=="opening").forEach(t=>{
+    ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
+    if(t.kind==="room"){
+      ctx.strokeStyle="#263238";ctx.lineWidth=7;ctx.strokeRect(t.x,t.y,t.w,t.h);
+    }else if(t.kind==="wall"&&t.points?.length){
+      ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.strokeStyle="#263238";ctx.lineWidth=8;ctx.stroke();
+    }else if(t.kind==="path"&&t.points?.length){
+      ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.strokeStyle=t.compartido?VT_COLOR_COMPARTIDO:vtColorCircuito(VT_CIRCUITOS.find(c=>c.id===t.circuitos?.[0])||{});ctx.lineWidth=4;ctx.stroke();
+      if(t.compartido){const q=t.points[Math.floor(t.points.length/2)];ctx.font="bold 13px Arial";ctx.fillStyle=VT_COLOR_COMPARTIDO;ctx.fillText(VT_CIRCUITOS.filter(c=>t.circuitos.includes(c.id)).map(c=>c.codigo).join("+"),q.x+5,q.y-8);}
+    }else if(t.kind==="symbol"){
+      const c=VT_CIRCUITOS.find(x=>x.id===t.circuitos?.[0]);ctx.fillStyle=c?vtColorCircuito(c):"#172033";ctx.font="bold 20px Arial";
+      ctx.fillText(({T1:"T",T2:"T×2",I:"I",L:"⊗",C:"□",Q:"▣"})[t.symbol]||"•",t.x-9,t.y+7);
+    }
+    ctx.restore();
+  });
+  VT_TRAZOS.filter(t=>t.kind==="opening").forEach(t=>vtDibujarAbertura(ctx,t));
+}
 async function vtLeerFotos(){const input=get("vt-fotos");if(!input||!input.files?.length)return VT_FOTOS;const files=Array.from(input.files).slice(0,12);for(const file of files){if(file.size>8*1024*1024){toast(`La foto ${file.name} supera 8 MB y se omitió`,"yellow");continue;}const data=await new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>resolve(null);r.readAsDataURL(file);});if(data)VT_FOTOS.push({nombre:file.name,data});}input.value="";return VT_FOTOS;}
 async function vtGuardarVisita(){
   if(!val("vt-cliente")&&!val("vt-pedido")){toast("Seleccioná un cliente o describí el pedido","yellow");return;}
