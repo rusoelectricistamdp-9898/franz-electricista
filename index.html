@@ -65,6 +65,7 @@
       <button class="menu-btn" onclick="ir('compras')"><span class="ico">🛒</span> Lista de Compras</button>
       <button class="menu-btn" onclick="ir('historial')"><span class="ico">📚</span> Historial</button>
       <button class="menu-btn" onclick="ir('perfil')"><span class="ico">⚙</span> Mi perfil</button>
+      <button class="menu-btn appearance-menu-btn" onclick="abrirSelectorTema();sbClose()"><span class="ico">🎨</span> Apariencia y colores</button>
     </nav>
     <div class="sb-footer" id="sb-footer">AEA 90364 · IRAM · IEC<br>Mar del Plata · 2026</div>
   </aside>
@@ -252,9 +253,9 @@
 
     <div class="panel">
       <div class="panel-title">5 · Croquis eléctrico por circuitos</div>
-      <p class="vt-ayuda">Cada circuito conserva su identificación y color. Para dibujar un recorrido compartido, seleccioná dos o más circuitos y activá «Compartir canalización».</p>
+      <p class="vt-ayuda">Primero podés dibujar la forma del ambiente, sus paredes, puertas y ventanas. Estas herramientas no necesitan un circuito. Después seleccioná un circuito para trazar el recorrido de cables y ubicar los puntos eléctricos.</p>
       <div class="vt-tools" style="flex-wrap:wrap;gap:8px;align-items:center">
-        <label class="fld" style="min-width:180px;flex:1;margin:0"><span>Herramienta</span><select id="vt-simbolo"><option value="libre">Dibujar recorrido</option><option value="T1">Toma simple</option><option value="T2">Toma doble</option><option value="I">Interruptor</option><option value="L">Luminaria</option><option value="C">Caja</option><option value="Q">Tablero</option></select></label>
+        <label class="fld" style="min-width:180px;flex:1;margin:0"><span>Herramienta</span><select id="vt-simbolo"><option value="room">▱ Dibujar habitación</option><option value="wall">━ Dibujar pared</option><option value="door">🚪 Puerta</option><option value="window">▤ Ventana</option><option value="libre">Dibujar recorrido eléctrico</option><option value="T1">Toma simple</option><option value="T2">Toma doble</option><option value="I">Interruptor</option><option value="L">Luminaria</option><option value="C">Caja</option><option value="Q">Tablero</option></select></label>
         <label class="fld" style="min-width:180px;flex:1;margin:0"><span>Circuito activo</span><select id="vt-circuito-activo"><option value="">Agregá primero un circuito</option></select></label>
         <button class="btn btn-outline btn-sm" id="vt-btn-compartir" type="button" onclick="vtAlternarCompartir()">⇄ Compartir canalización</button>
         <button class="btn btn-outline btn-sm" type="button" onclick="vtLimpiarCroquis()">Limpiar croquis</button>
@@ -269,7 +270,7 @@
       <div id="vt-compartir-resumen" class="vt-compartir-resumen" aria-live="polite">Modo individual: seleccioná circuitos para compartir un tramo.</div>
       <div id="vt-leyenda-circuitos" class="vt-leyenda-circuitos"></div>
       <canvas id="vt-croquis" width="900" height="420" aria-label="Área de croquis eléctrico" style="display:block;width:100%;height:auto;min-height:220px;background:#fff;border:1px solid var(--border);border-radius:10px;touch-action:none"></canvas>
-      <div class="vt-ayuda">El color violeta identifica tramos compartidos. Es un croquis de relevamiento: la compatibilidad, ocupación y protección de conductores deben verificarse técnicamente antes de ejecutar.</div>
+      <div class="vt-ayuda">Paredes, puertas y ventanas forman la base del croquis; los circuitos se dibujan encima. El color violeta identifica tramos compartidos. Es un croquis de relevamiento: la compatibilidad, ocupación y protección de conductores deben verificarse técnicamente antes de ejecutar.</div>
     </div>
 
     <div class="panel vt-materiales-panel">
@@ -963,6 +964,22 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+
+<!-- Selector de apariencia Franz -->
+<div id="franz-theme-modal" class="franz-theme-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="franz-theme-title" onclick="if(event.target===this)cerrarSelectorTema()">
+  <section class="franz-theme-dialog">
+    <div class="franz-theme-heading"><div><span class="eyebrow">PERSONALIZACIÓN</span><h2 id="franz-theme-title">Elegí tu tema</h2><p>La apariencia se guarda en este dispositivo.</p></div><button class="franz-theme-close" type="button" onclick="cerrarSelectorTema()" aria-label="Cerrar">×</button></div>
+    <div class="franz-theme-options">
+      <button type="button" class="franz-theme-option" data-franz-theme="militar" onclick="cambiarTema('militar')"><span class="theme-preview preview-militar"><i></i><i></i><i></i></span><strong>Verde oliva</strong><small>Identidad Franz</small><b class="theme-check">✓</b></button>
+      <button type="button" class="franz-theme-option" data-franz-theme="electrico" onclick="cambiarTema('electrico')"><span class="theme-preview preview-electrico"><i></i><i></i><i></i></span><strong>Azul eléctrico</strong><small>Tecnológico</small><b class="theme-check">✓</b></button>
+      <button type="button" class="franz-theme-option" data-franz-theme="industrial" onclick="cambiarTema('industrial')"><span class="theme-preview preview-industrial"><i></i><i></i><i></i></span><strong>Industrial</strong><small>Grafito y naranja</small><b class="theme-check">✓</b></button>
+      <button type="button" class="franz-theme-option" data-franz-theme="oscuro" onclick="cambiarTema('oscuro')"><span class="theme-preview preview-oscuro"><i></i><i></i><i></i></span><strong>Oscuro profesional</strong><small>Oscuro y verde</small><b class="theme-check">✓</b></button>
+      <button type="button" class="franz-theme-option" data-franz-theme="claro" onclick="cambiarTema('claro')"><span class="theme-preview preview-claro"><i></i><i></i><i></i></span><strong>Claro</strong><small>Luminoso y limpio</small><b class="theme-check">✓</b></button>
+    </div>
+    <div class="franz-theme-footer"><span>El cambio se aplica inmediatamente.</span><button type="button" class="btn btn-primary" onclick="cerrarSelectorTema()">Listo</button></div>
+  </section>
+</div>
 
 </body>
 </html>
