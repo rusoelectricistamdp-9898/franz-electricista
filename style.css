@@ -992,3 +992,102 @@ body::before{background-image:linear-gradient(rgba(167,189,104,.018) 1px,transpa
 @media(max-width:1150px){.home-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.workflow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-mark{width:180px}}
 @media(max-width:700px){.sidebar{width:min(290px,86vw)}.page{padding:18px 14px 90px}.home-hero{padding:27px 21px 25px;min-height:0;border-radius:18px}.hero-copy h1{font-size:2.45rem}.hero-copy p{font-size:.86rem}.hero-mark{display:none}.hero-status{position:static;margin-top:23px;font-size:.54rem}.home-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat-card{min-height:92px;padding:12px!important}.section-heading{align-items:flex-start}.section-heading h2{font-size:1.18rem}.workflow-grid{grid-template-columns:1fr 1fr;gap:9px}.work-card{min-height:190px;padding:14px}.work-card strong{font-size:.9rem}.work-card small{font-size:.7rem}.work-icon{width:36px;height:36px;margin-bottom:12px}.home-bottom-grid{grid-template-columns:1fr}.hero-actions{gap:8px}.hero-actions .btn{width:100%}}
 @media(max-width:390px){.workflow-grid{grid-template-columns:1fr}.work-card{min-height:165px}.home-stats{gap:7px}.stat-card{grid-template-columns:32px 1fr;gap:3px 7px}.stat-icon{width:31px;height:31px}}
+
+/* ==========================================================
+   FRANZ ETAPA 8 — RESPONSIVE INTEGRAL
+   Ajustes de distribución para escritorio, tablet y móvil.
+   No modifica la lógica JavaScript ni las funciones existentes.
+========================================================== */
+html, body { width:100%; max-width:100%; }
+body { min-width:0; }
+#app-container { display:flex; width:100%; min-width:0; min-height:100dvh; }
+.sidebar { flex:0 0 264px; min-width:0; max-width: min(264px, 86vw); }
+.main { flex:1 1 auto; min-width:0; width:calc(100% - 264px); }
+.page { min-width:0; width:100%; }
+.page > *, .panel > *, .home-hero > *, .form-grid > *, .cards > * { min-width:0; max-width:100%; }
+img, canvas, video, svg { max-width:100%; }
+input, select, textarea, button { max-width:100%; }
+.form-grid, .cards, .act-grid, .home-stats, .workflow-grid, .home-bottom-grid {
+  min-width:0;
+}
+.tbl-wrap, .table-wrap, .table-responsive { max-width:100%; overflow-x:auto; }
+
+/* Notebooks y tablets horizontales */
+@media (min-width:769px) and (max-width:1180px) {
+  .sidebar { flex-basis:224px; width:224px; }
+  .main { width:calc(100% - 224px); }
+  .page { padding-left:clamp(14px,2vw,24px); padding-right:clamp(14px,2vw,24px); }
+  .home-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .workflow-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .home-bottom-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .panel { min-width:0; }
+}
+
+/* Móviles y tablets verticales: navegación fuera del flujo */
+@media (max-width:768px) {
+  #app-container { display:block; min-height:100dvh; }
+  body { display:block; min-height:100dvh; overflow-x:hidden; }
+  .sidebar {
+    position:fixed !important;
+    inset:0 auto 0 0 !important;
+    width:min(290px,86vw) !important;
+    max-width:86vw !important;
+    height:100dvh;
+    transform:translateX(-105%);
+    left:0 !important;
+    z-index:1200;
+    transition:transform .25s ease;
+  }
+  .sidebar.mob-open { transform:translateX(0); left:0 !important; }
+  .main { display:block; width:100%; max-width:100%; min-width:0; height:auto; min-height:100dvh; overflow:visible; }
+  .page { width:100%; max-width:100%; padding:70px 14px calc(34px + env(safe-area-inset-bottom)); }
+  .ph { align-items:flex-start; }
+  .ph > * { min-width:0; max-width:100%; }
+  .panel, .card { min-width:0; max-width:100%; }
+  .form-grid.g2, .form-grid.g3 { grid-template-columns:minmax(0,1fr) !important; }
+  .form-grid, .fld { min-width:0; }
+  .form-grid input, .form-grid select, .form-grid textarea,
+  .fld input, .fld select, .fld textarea { width:100%; min-width:0; }
+  .btn-row, .search-bar, .ph-actions, .vt-tools { min-width:0; max-width:100%; flex-wrap:wrap; }
+  .search-bar { flex-direction:column; align-items:stretch; }
+  .search-bar > *, .btn-row > * { min-width:0; max-width:100%; }
+  .home-hero { width:100%; min-width:0; }
+  .home-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .workflow-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .home-bottom-grid { grid-template-columns:minmax(0,1fr); }
+  .stat-card, .work-card { min-width:0; overflow-wrap:anywhere; }
+  .tbl-wrap, .table-wrap, .table-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { max-width:none; }
+  #vt-croquis { display:block; width:100%; height:auto; }
+  .modal, .modal-content, .lb-body { max-width:calc(100vw - 24px); }
+  .hambtn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:10px; z-index:1300; }
+}
+
+/* Celulares angostos */
+@media (max-width:480px) {
+  .page { padding-left:11px; padding-right:11px; }
+  .panel { padding:12px 11px; }
+  .home-hero { padding:22px 16px; }
+  .hero-copy h1 { font-size:clamp(1.8rem,8vw,2.35rem); overflow-wrap:anywhere; }
+  .home-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .workflow-grid { grid-template-columns:minmax(0,1fr); }
+  .work-card { min-height:0; }
+  .vt-material-row { grid-template-columns:minmax(0,1fr) !important; }
+  #pg-visita .vt-material-row { grid-template-columns:minmax(0,1fr) !important; }
+  #pg-visita .vt-material-row > * { grid-column:1/-1; min-width:0; width:100%; }
+  .act-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width:350px) {
+  .page { padding-left:8px; padding-right:8px; }
+  .home-stats, .cards, .act-grid { grid-template-columns:minmax(0,1fr); }
+  .ph h1 { font-size:1.1rem; }
+}
+
+/* Tablets: aprovechar el ancho sin forzar columnas demasiado estrechas */
+@media (min-width:600px) and (max-width:900px) {
+  .home-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .workflow-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .form-grid.g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .form-grid.g3 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
