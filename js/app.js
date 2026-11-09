@@ -67,6 +67,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") sbClose(); });
 // TEMA
 function cambiarTema(tema){
   const temas={
+    militar:{"--bg":"#171d17","--bg2":"#202820","--bg3":"#2b352a","--verde":"#a6b879","--border":"rgba(166,184,121,.20)","--border2":"rgba(166,184,121,.38)","--text":"#e8eadf","--muted2":"#b0b9a1","--cyan":"#80c7d4"},
     default:{"--bg":"#0a0f1a","--bg2":"#111827","--bg3":"#1e293b","--verde":"#22c55e"},
     industrial:{"--bg":"#111111","--bg2":"#1a1a1a","--bg3":"#222222","--verde":"#ff6600"},
     electrico:{"--bg":"#07101e","--bg2":"#0b1628","--bg3":"#111f35","--verde":"#00d4ff"},
@@ -2055,7 +2056,7 @@ function vtAgregarCircuito(){
   const cantidad=Math.max(0,Number(val("vt-puntos"))||0), metros=Math.max(0,Number(val("vt-recorrido"))||0);
   if(!cantidad&&!metros&&!val("vt-tipo-punto")){toast("Indicá puntos, recorrido o descripción del circuito","yellow");return;}
   const numero=VT_CIRCUITOS.length+1;
-  const circuito={id:uid(),codigo:`C${numero}`,tipo:val("vt-circuito"),puntos:cantidad,detalle:val("vt-tipo-punto"),conductores:val("vt-conductores"),canalizacion:val("vt-cano-diam"),metros,color:VT_COLORES[(numero-1)%VT_COLORES.length]};
+  const circuito={id:uid(),codigo:`C${numero}`,tipo:val("vt-circuito"),puntos:cantidad,detalle:val("vt-tipo-punto"),conductores:val("vt-conductores"),canalizacion:val("vt-cano-diam"),canalizacionUbicacion:val("vt-canalizacion-ubicacion")||"A definir",canalizacionSistema:val("vt-canalizacion-sistema")||"A definir",metros,color:VT_COLORES[(numero-1)%VT_COLORES.length]};
   VT_CIRCUITOS.push(circuito);
   vtRenderListas(); vtActualizarHerramientasCroquis();
   ["vt-puntos","vt-tipo-punto","vt-conductores","vt-cano-diam","vt-recorrido"].forEach(id=>{if(get(id))get(id).value="";}); toast(`${circuito.codigo} agregado · ${circuito.tipo}`);
@@ -2068,7 +2069,7 @@ function vtEliminar(tipo,id){
 function vtRenderListas(){
   const a=get("vt-lista-ambientes"),c=get("vt-lista-circuitos");
   if(a)a.innerHTML=VT_AMBIENTES.map(x=>`<div class="vt-item"><div><strong>${escapeHtml(x.nombre)} · ${escapeHtml(x.estado)}</strong><small>${escapeHtml(x.notas||x.inspeccion.observaciones||"Sin observaciones")}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('ambiente','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste ambientes.</div>';
-  if(c)c.innerHTML=VT_CIRCUITOS.map(x=>`<div class="vt-item"><div><strong><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${vtColorCircuito(x)};margin-right:6px"></span>${escapeHtml(x.codigo||"Circuito")} · ${escapeHtml(x.tipo)} · ${x.puntos} punto(s)</strong><small>${escapeHtml(x.detalle)} · ${x.metros} m · ${escapeHtml(x.conductores)}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('circuito','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste circuitos.</div>';
+  if(c)c.innerHTML=VT_CIRCUITOS.map(x=>`<div class="vt-item"><div><strong><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${vtColorCircuito(x)};margin-right:6px"></span>${escapeHtml(x.codigo||"Circuito")} · ${escapeHtml(x.tipo)} · ${x.puntos} punto(s)</strong><small>${escapeHtml(x.detalle)} · ${x.metros} m · ${escapeHtml(x.conductores)}</small><small>Canalización: ${escapeHtml(x.canalizacionUbicacion||"A definir")} · ${escapeHtml(x.canalizacionSistema||"A definir")}${x.canalizacion?" · "+escapeHtml(x.canalizacion):""}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('circuito','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste circuitos.</div>';
   vtActualizarHerramientasCroquis();
 }
 function vtActualizarHerramientasCroquis(){
@@ -2088,7 +2089,7 @@ function vtAlternarCompartir(){
       const marcado=VT_COMPARTIR_ACTIVOS.includes(c.id);
       return `<label class="vt-compartir-opcion ${marcado?"seleccionada":""}" data-circuito="${c.id}">
         <input type="checkbox" value="${c.id}" ${marcado?"checked":""} onchange="vtCambioSeleccionCompartir(this)">
-        <span class="vt-check-visual" aria-hidden="true">${marcado?"✓":""}</span>
+        <span class="vt-check-visual" aria-hidden="true">${marcado?"⚡":""}</span>
         <i style="background:${vtColorCircuito(c)}"></i>
         <span class="vt-opcion-texto"><strong>${escapeHtml(c.codigo||"C")}</strong> – ${escapeHtml(c.tipo)}</span>
         <span class="vt-estado-opcion">${marcado?"Seleccionado":"Tocar para seleccionar"}</span>
@@ -2099,7 +2100,7 @@ function vtAlternarCompartir(){
 }
 function vtCambioSeleccionCompartir(input){
   const label=input?.closest(".vt-compartir-opcion");
-  if(label){label.classList.toggle("seleccionada",input.checked);const check=label.querySelector(".vt-check-visual");const estado=label.querySelector(".vt-estado-opcion");if(check)check.textContent=input.checked?"✓":"";if(estado)estado.textContent=input.checked?"Seleccionado":"Tocar para seleccionar";}
+  if(label){label.classList.toggle("seleccionada",input.checked);const check=label.querySelector(".vt-check-visual");const estado=label.querySelector(".vt-estado-opcion");if(check)check.textContent=input.checked?"⚡":"";if(estado)estado.textContent=input.checked?"Seleccionado":"Tocar para seleccionar";}
   vtActualizarEstadoCompartir();
 }
 function vtActualizarEstadoCompartir(){
@@ -2176,22 +2177,47 @@ function vtAgregarMaterial(datos=null){
 }
 function vtEliminarMaterial(id){VT_MATERIALES=VT_MATERIALES.filter(m=>m.id!==id);vtRenderMateriales();}
 function vtCambiarMaterial(id,campo,valor){const m=VT_MATERIALES.find(x=>x.id===id);if(!m)return;m[campo]=campo==="cantidad"||campo==="precio"?Math.max(0,Number(valor)||0):valor;vtRenderMateriales();}
+function vtActualizarSistemaMaterialCanalizacion(id,campo,valor){
+  const m=VT_MATERIALES.find(x=>x.id===id);if(!m)return;
+  m[campo]=valor;
+  const medida=m.canalizacionMedida?` · ${m.canalizacionMedida}`:"";
+  const circuito=VT_CIRCUITOS.find(c=>c.id===m.sugeridoDe);
+  m.nombre=`Canalización ${(m.canalizacionUbicacion||"A definir").toLowerCase()} — ${m.canalizacionSistema||"A definir"}${medida}${circuito?` (${circuito.tipo})`:""}`;
+  vtRenderMateriales();
+}
 function vtRenderMateriales(){
   const cont=get("vt-lista-materiales");if(!cont)return;
-  cont.innerHTML=VT_MATERIALES.map(m=>`<div class="vt-material-row"><div class="vt-mat-desc"><b>${escapeHtml(m.nombre)}</b><small>${escapeHtml(m.categoria||"Material")} · ${escapeHtml(m.origen||"comprar")}</small></div><div><small>Cantidad</small><input type="number" min="0" step="0.1" value="${Number(m.cantidad)||0}" onchange="vtCambiarMaterial('${m.id}','cantidad',this.value)"></div><div><small>Unidad</small><select onchange="vtCambiarMaterial('${m.id}','unidad',this.value)">${["unidad","m","rollo","caja","juego","kg","l"].map(u=>`<option ${m.unidad===u?"selected":""}>${u}</option>`).join("")}</select></div><div><small>Precio unit.</small><input type="number" min="0" value="${Number(m.precio)||0}" onchange="vtCambiarMaterial('${m.id}','precio',this.value)"></div><div><small>Destino</small><select onchange="vtCambiarMaterial('${m.id}','origen',this.value)"><option value="comprar" ${m.origen==="comprar"?"selected":""}>Comprar</option><option value="cliente" ${m.origen==="cliente"?"selected":""}>Cliente</option><option value="existente" ${m.origen==="existente"?"selected":""}>Existente</option></select></div><button class="btn btn-red btn-sm" onclick="vtEliminarMaterial('${m.id}')">Quitar</button></div>`).join("")||'<p class="vt-ayuda">Todavía no hay materiales cargados.</p>';
+  const sistemasCanalizacion=["PVC rígido","PVC corrugado flexible (recuperable)","Cable canal / canaleta","Bandeja portacables de aluminio","Bandeja portacables de acero inoxidable","Bandeja portacables galvanizada","Caño metálico rígido","Canalización flexible","A definir"];
+  const ubicacionesCanalizacion=["Interior","Exterior","Mixta","A definir"];
+  cont.innerHTML=VT_MATERIALES.map(m=>{
+    const selectorCanal=m.categoria==="Canalización"&&m.sugeridoDe?`<div class="vt-mat-canal-selectores"><label>Ubicación<select aria-label="Ubicación de canalización" onchange="vtActualizarSistemaMaterialCanalizacion('${m.id}','canalizacionUbicacion',this.value)">${ubicacionesCanalizacion.map(v=>`<option ${m.canalizacionUbicacion===v?"selected":""}>${v}</option>`).join("")}</select></label><label>Tipo de canalización<select aria-label="Tipo de canalización" onchange="vtActualizarSistemaMaterialCanalizacion('${m.id}','canalizacionSistema',this.value)">${sistemasCanalizacion.map(v=>`<option ${m.canalizacionSistema===v?"selected":""}>${v}</option>`).join("")}</select></label></div>`:"";
+    return `<div class="vt-material-row"><div class="vt-mat-desc"><b>${escapeHtml(m.nombre)}</b><small>${escapeHtml(m.categoria||"Material")} · ${escapeHtml(m.origen||"comprar")}</small>${selectorCanal}</div><div><small>Cantidad</small><input type="number" min="0" step="0.1" value="${Number(m.cantidad)||0}" onchange="vtCambiarMaterial('${m.id}','cantidad',this.value)"></div><div><small>Unidad</small><select onchange="vtCambiarMaterial('${m.id}','unidad',this.value)">${["unidad","m","rollo","caja","juego","kg","l"].map(u=>`<option ${m.unidad===u?"selected":""}>${u}</option>`).join("")}</select></div><div><small>Precio unit.</small><input type="number" min="0" value="${Number(m.precio)||0}" onchange="vtCambiarMaterial('${m.id}','precio',this.value)"></div><div><small>Destino</small><select onchange="vtCambiarMaterial('${m.id}','origen',this.value)"><option value="comprar" ${m.origen==="comprar"?"selected":""}>Comprar</option><option value="cliente" ${m.origen==="cliente"?"selected":""}>Cliente</option><option value="existente" ${m.origen==="existente"?"selected":""}>Existente</option></select></div><button class="btn btn-red btn-sm" onclick="vtEliminarMaterial('${m.id}')">Quitar</button></div>`;
+  }).join("")||'<p class="vt-ayuda">Todavía no hay materiales cargados.</p>';
   const comprar=VT_MATERIALES.filter(m=>m.origen==="comprar"),total=comprar.reduce((s,m)=>s+(Number(m.cantidad)||0)*(Number(m.precio)||0),0);
   const r=get("vt-resumen-materiales");if(r)r.innerHTML=`<span>Ítems: <strong>${VT_MATERIALES.length}</strong></span><span>Para comprar: <strong>${comprar.length}</strong></span><span>Estimación de compra: <strong>${fmt(total)}</strong></span>`;
 }
 function vtSugerirMateriales(){
-  let agregados=0;
+  let agregados=0,actualizados=0;
   VT_CIRCUITOS.forEach(c=>{
     const m=Math.max(0,Number(c.metros)||0);if(!m)return;
-    const canal=c.canalizacion||"Canalización a definir";
-    if(!VT_MATERIALES.some(x=>x.sugeridoDe===c.id&&x.categoria==="Canalización")){vtAgregarMaterial({nombre:`Canalización — ${canal} (${c.tipo})`,categoria:"Canalización",cantidad:m,unidad:"m",precio:0,origen:"comprar",sugeridoDe:c.id});agregados++;}
+    const ubicacion=c.canalizacionUbicacion||"A definir";
+    const sistema=c.canalizacionSistema||"A definir";
+    const medida=c.canalizacion?` · ${c.canalizacion}`:"";
+    const nombreCanal=`Canalización ${ubicacion.toLowerCase()} — ${sistema}${medida} (${c.tipo})`;
+    const existente=VT_MATERIALES.find(x=>x.sugeridoDe===c.id&&x.categoria==="Canalización");
+    if(existente){existente.canalizacionUbicacion=ubicacion;existente.canalizacionSistema=sistema;existente.canalizacionMedida=c.canalizacion||"";existente.nombre=nombreCanal;existente.cantidad=m;existente.unidad="m";actualizados++;}
+    else{VT_MATERIALES.push({id:uid(),nombre:nombreCanal,categoria:"Canalización",cantidad:m,unidad:"m",precio:0,origen:"comprar",sugeridoDe:c.id,manual:false,canalizacionUbicacion:ubicacion,canalizacionSistema:sistema,canalizacionMedida:c.canalizacion||""});agregados++;}
     const match=String(c.conductores||"").match(/(\d+)\s*[x×]/i);
-    if(match&&!VT_MATERIALES.some(x=>x.sugeridoDe===c.id&&x.categoria==="Cables")){const n=Number(match[1]);vtAgregarMaterial({nombre:`Conductores ${c.conductores} — ${c.tipo}`,categoria:"Cables",cantidad:m*n,unidad:"m",precio:0,origen:"comprar",sugeridoDe:c.id});agregados++;}
+    if(match){
+      const existenteCable=VT_MATERIALES.find(x=>x.sugeridoDe===c.id&&x.categoria==="Cables");
+      const nombreCable=`Conductores ${c.conductores} — ${c.tipo}`;
+      if(existenteCable){existenteCable.nombre=nombreCable;existenteCable.cantidad=m*Number(match[1]);existenteCable.unidad="m";actualizados++;}
+      else{VT_MATERIALES.push({id:uid(),nombre:nombreCable,categoria:"Cables",cantidad:m*Number(match[1]),unidad:"m",precio:0,origen:"comprar",sugeridoDe:c.id,manual:false});agregados++;}
+    }
   });
-  vtRenderMateriales();toast(agregados?`${agregados} sugerencias agregadas. Revisá cantidades y precios.`:"No hay recorridos nuevos o faltan datos de conductores.",agregados?"verde":"yellow");
+  vtRenderMateriales();
+  const total=agregados+actualizados;
+  toast(total?`${agregados} materiales nuevos y ${actualizados} sugerencias actualizadas. Revisá cantidades, sistema y precios.`:"No hay recorridos cargados o faltan metros estimados.",total?"verde":"yellow");
 }
 function vtNombreCliente(){const id=val("vt-cliente");const c=(DB.clientes||[]).find(x=>String(x.id)===String(id));return c?(c.nombre||c.razonSocial||c.empresa||"Cliente"):"Cliente sin seleccionar";}
 function vtCrearPresupuesto(){

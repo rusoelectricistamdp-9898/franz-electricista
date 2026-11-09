@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Franz Electricista</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0f1a">
+<meta name="theme-color" content="#20271d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -75,6 +75,7 @@
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="sincronizarTodo()" title="Sincronizar con la nube">☁ Sync</button>
         <select onchange="cambiarTema(this.value)" style="width:auto;padding:6px 10px;font-size:.8rem">
+          <option value="militar">🪖 Táctico eléctrico</option>
           <option value="default">🟢 Verde</option>
           <option value="industrial">🟠 Industrial</option>
           <option value="electrico">🔵 Eléctrico</option>
@@ -228,7 +229,19 @@
         <div class="fld"><label>Cantidad de puntos</label><input id="vt-puntos" type="number" min="0" value="0"></div>
         <div class="fld"><label>Luminaria / mecanismo</label><input id="vt-tipo-punto" placeholder="LED, toma doble, tecla…"></div>
         <div class="fld"><label>Conductores / sección</label><input id="vt-conductores" placeholder="Ej. 3 × 1,5 mm² (a verificar)" ></div>
-        <div class="fld"><label>Canalización / diámetro</label><input id="vt-cano-diam" placeholder="Tipo y diámetro"></div>
+        <div class="fld"><label>Ubicación de la canalización</label><select id="vt-canalizacion-ubicacion"><option value="Interior">Interior</option><option value="Exterior">Exterior</option><option value="Mixta">Mixta (interior / exterior)</option><option value="A definir">A definir</option></select></div>
+        <div class="fld"><label>Sistema de canalización física</label><select id="vt-canalizacion-sistema">
+          <option value="PVC rígido">Caño PVC rígido</option>
+          <option value="PVC corrugado flexible (recuperable)">Caño PVC corrugado flexible (recuperable)</option>
+          <option value="Cable canal / canaleta">Cable canal / canaleta</option>
+          <option value="Bandeja portacables de aluminio">Bandeja portacables de aluminio</option>
+          <option value="Bandeja portacables de acero inoxidable">Bandeja portacables de acero inoxidable</option>
+          <option value="Bandeja portacables galvanizada">Bandeja portacables galvanizada</option>
+          <option value="Caño metálico rígido">Caño metálico rígido</option>
+          <option value="Canalización flexible">Canalización flexible</option>
+          <option value="A definir">A definir</option>
+        </select></div>
+        <div class="fld"><label>Diámetro / medida / detalle</label><input id="vt-cano-diam" placeholder="Ej. Ø20 mm, 40×20 mm, bandeja 100 mm"></div>
         <div class="fld"><label>Recorrido estimado (m)</label><input id="vt-recorrido" type="number" min="0" step="0.1" placeholder="Metros"></div>
       </div>
       <div class="btn-row"><button class="btn btn-verde" type="button" onclick="vtAgregarCircuito()">＋ Agregar circuito</button></div><div id="vt-lista-circuitos" class="vt-lista"></div>
