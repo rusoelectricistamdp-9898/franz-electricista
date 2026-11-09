@@ -235,11 +235,23 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">5 · Croquis rápido</div>
-      <p class="vt-ayuda">Dibujá recorridos con el dedo o mouse. Elegí un símbolo y tocá el croquis para ubicarlo. Es un esquema de relevamiento, no un plano ejecutivo.</p>
-      <div class="vt-tools"><select id="vt-simbolo"><option value="libre">Trazo libre</option><option value="T1">Toma simple</option><option value="T2">Toma doble</option><option value="I">Interruptor</option><option value="L">Luminaria</option><option value="C">Caja</option><option value="Q">Tablero</option></select><button class="btn btn-outline btn-sm" type="button" onclick="vtLimpiarCroquis()">Limpiar croquis</button></div>
+      <div class="panel-title">5 · Croquis eléctrico por circuitos</div>
+      <p class="vt-ayuda">Cada circuito conserva su identificación y color. Para dibujar un recorrido compartido, seleccioná dos o más circuitos y activá «Compartir canalización».</p>
+      <div class="vt-tools" style="flex-wrap:wrap;gap:8px;align-items:center">
+        <label class="fld" style="min-width:180px;flex:1;margin:0"><span>Herramienta</span><select id="vt-simbolo"><option value="libre">Dibujar recorrido</option><option value="T1">Toma simple</option><option value="T2">Toma doble</option><option value="I">Interruptor</option><option value="L">Luminaria</option><option value="C">Caja</option><option value="Q">Tablero</option></select></label>
+        <label class="fld" style="min-width:180px;flex:1;margin:0"><span>Circuito activo</span><select id="vt-circuito-activo"><option value="">Agregá primero un circuito</option></select></label>
+        <button class="btn btn-outline btn-sm" id="vt-btn-compartir" type="button" onclick="vtAlternarCompartir()">⇄ Compartir canalización</button>
+        <button class="btn btn-outline btn-sm" type="button" onclick="vtLimpiarCroquis()">Limpiar croquis</button>
+      </div>
+      <div id="vt-compartir-panel" class="vt-compartir-panel" hidden>
+        <strong>Seleccioná los circuitos que compartirán el próximo tramo</strong>
+        <div id="vt-compartir-opciones" class="vt-compartir-opciones"></div>
+        <div class="btn-row"><button class="btn btn-verde btn-sm" type="button" onclick="vtAplicarCompartir()">Aplicar selección</button><button class="btn btn-outline btn-sm" type="button" onclick="vtCancelarCompartir()">Cancelar</button></div>
+        <small>El tramo compartido se dibuja con un color único; los circuitos mantienen sus colores e identidad en la leyenda.</small>
+      </div>
+      <div id="vt-leyenda-circuitos" class="vt-leyenda-circuitos"></div>
       <canvas id="vt-croquis" width="900" height="420" aria-label="Área de croquis eléctrico" style="display:block;width:100%;height:auto;min-height:220px;background:#fff;border:1px solid var(--border);border-radius:10px;touch-action:none"></canvas>
-      <div class="vt-ayuda">Los símbolos son referencias gráficas editables; verificá su correspondencia con la documentación técnica aplicable.</div>
+      <div class="vt-ayuda">El color violeta identifica tramos compartidos. Es un croquis de relevamiento: la compatibilidad, ocupación y protección de conductores deben verificarse técnicamente antes de ejecutar.</div>
     </div>
 
     <div class="panel vt-materiales-panel">

@@ -2046,39 +2046,90 @@ function vtAgregarAmbiente(){
   ["vt-i-canal","vt-i-cables","vt-i-mecanismos","vt-i-proteccion"].forEach(id=>{if(get(id))get(id).value="pendiente";});
   toast("Ambiente incorporado a la visita");
 }
+const VT_COLORES = ["#e53935", "#1976d2", "#2e7d32", "#ef6c00", "#8e24aa", "#00838f", "#6d4c41", "#3949ab", "#c2185b", "#558b2f"];
+const VT_COLOR_COMPARTIDO = "#7c3aed";
+let VT_CIRCUITOS_DIBUJO = [];
+let VT_COMPARTIR_ACTIVOS = [];
+function vtColorCircuito(c){return c.color || VT_COLORES[Math.max(0,VT_CIRCUITOS.indexOf(c)) % VT_COLORES.length];}
 function vtAgregarCircuito(){
   const cantidad=Math.max(0,Number(val("vt-puntos"))||0), metros=Math.max(0,Number(val("vt-recorrido"))||0);
   if(!cantidad&&!metros&&!val("vt-tipo-punto")){toast("Indicá puntos, recorrido o descripción del circuito","yellow");return;}
-  VT_CIRCUITOS.push({id:uid(),tipo:val("vt-circuito"),puntos:cantidad,detalle:val("vt-tipo-punto"),conductores:val("vt-conductores"),canalizacion:val("vt-cano-diam"),metros});
-  vtRenderListas(); ["vt-puntos","vt-tipo-punto","vt-conductores","vt-cano-diam","vt-recorrido"].forEach(id=>{if(get(id))get(id).value="";}); toast("Circuito agregado");
+  const numero=VT_CIRCUITOS.length+1;
+  const circuito={id:uid(),codigo:`C${numero}`,tipo:val("vt-circuito"),puntos:cantidad,detalle:val("vt-tipo-punto"),conductores:val("vt-conductores"),canalizacion:val("vt-cano-diam"),metros,color:VT_COLORES[(numero-1)%VT_COLORES.length]};
+  VT_CIRCUITOS.push(circuito);
+  vtRenderListas(); vtActualizarHerramientasCroquis();
+  ["vt-puntos","vt-tipo-punto","vt-conductores","vt-cano-diam","vt-recorrido"].forEach(id=>{if(get(id))get(id).value="";}); toast(`${circuito.codigo} agregado · ${circuito.tipo}`);
 }
-function vtEliminar(tipo,id){ if(tipo==="ambiente")VT_AMBIENTES=VT_AMBIENTES.filter(x=>x.id!==id); else VT_CIRCUITOS=VT_CIRCUITOS.filter(x=>x.id!==id); vtRenderListas(); }
+function vtEliminar(tipo,id){
+  if(tipo==="ambiente")VT_AMBIENTES=VT_AMBIENTES.filter(x=>x.id!==id);
+  else {VT_CIRCUITOS=VT_CIRCUITOS.filter(x=>x.id!==id);VT_TRAZOS=VT_TRAZOS.filter(t=>!(t.circuitos||[]).includes(id));VT_COMPARTIR_ACTIVOS=VT_COMPARTIR_ACTIVOS.filter(x=>x!==id);vtRedibujarCroquis();vtActualizarHerramientasCroquis();}
+  vtRenderListas();
+}
 function vtRenderListas(){
   const a=get("vt-lista-ambientes"),c=get("vt-lista-circuitos");
   if(a)a.innerHTML=VT_AMBIENTES.map(x=>`<div class="vt-item"><div><strong>${escapeHtml(x.nombre)} · ${escapeHtml(x.estado)}</strong><small>${escapeHtml(x.notas||x.inspeccion.observaciones||"Sin observaciones")}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('ambiente','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste ambientes.</div>';
-  if(c)c.innerHTML=VT_CIRCUITOS.map(x=>`<div class="vt-item"><div><strong>${escapeHtml(x.tipo)} · ${x.puntos} punto(s)</strong><small>${escapeHtml(x.detalle)} · ${x.metros} m · ${escapeHtml(x.conductores)}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('circuito','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste circuitos.</div>';
+  if(c)c.innerHTML=VT_CIRCUITOS.map(x=>`<div class="vt-item"><div><strong><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${vtColorCircuito(x)};margin-right:6px"></span>${escapeHtml(x.codigo||"Circuito")} · ${escapeHtml(x.tipo)} · ${x.puntos} punto(s)</strong><small>${escapeHtml(x.detalle)} · ${x.metros} m · ${escapeHtml(x.conductores)}</small></div><button class="btn btn-outline btn-sm" onclick="vtEliminar('circuito','${x.id}')">Quitar</button></div>`).join("")||'<div class="vt-ayuda">Todavía no agregaste circuitos.</div>';
+  vtActualizarHerramientasCroquis();
 }
+function vtActualizarHerramientasCroquis(){
+  const sel=get("vt-circuito-activo"),actual=sel?.value;
+  if(sel){sel.innerHTML=VT_CIRCUITOS.map(c=>`<option value="${c.id}">${escapeHtml(c.codigo||"C")} · ${escapeHtml(c.tipo)}</option>`).join("")||'<option value="">Agregá primero un circuito</option>';if(VT_CIRCUITOS.some(c=>c.id===actual))sel.value=actual;}
+  const ley=get("vt-leyenda-circuitos");
+  if(ley)ley.innerHTML=VT_CIRCUITOS.map(c=>`<span class="vt-leyenda-item"><i style="background:${vtColorCircuito(c)}"></i>${escapeHtml(c.codigo||"C")} – ${escapeHtml(c.tipo)}</span>`).join("")+(VT_TRAZOS.some(t=>t.compartido)?`<span class="vt-leyenda-item"><i style="background:${VT_COLOR_COMPARTIDO}"></i>Canalización compartida</span>`:"");
+}
+function vtAlternarCompartir(){
+  if(VT_CIRCUITOS.length<2){toast("Necesitás al menos dos circuitos para compartir una canalización","yellow");return;}
+  const panel=get("vt-compartir-panel");if(!panel)return;
+  panel.hidden=!panel.hidden;
+  if(!panel.hidden){const cont=get("vt-compartir-opciones");if(cont)cont.innerHTML=VT_CIRCUITOS.map(c=>`<label><input type="checkbox" value="${c.id}" ${VT_COMPARTIR_ACTIVOS.includes(c.id)?"checked":""}><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${vtColorCircuito(c)}"></span>${escapeHtml(c.codigo||"C")} – ${escapeHtml(c.tipo)}</label>`).join("");}
+}
+function vtAplicarCompartir(){
+  const ids=Array.from(get("vt-compartir-opciones")?.querySelectorAll('input[type="checkbox"]:checked')||[]).map(x=>x.value);
+  if(ids.length<2){toast("Seleccioná por lo menos dos circuitos","yellow");return;}
+  VT_COMPARTIR_ACTIVOS=ids;const panel=get("vt-compartir-panel");if(panel)panel.hidden=true;
+  const nombres=VT_CIRCUITOS.filter(c=>ids.includes(c.id)).map(c=>c.codigo).join(" + ");
+  const b=get("vt-btn-compartir");if(b)b.textContent=`⇄ Compartiendo: ${nombres}`;
+  toast(`Próximo recorrido compartido: ${nombres}`);
+}
+function vtCancelarCompartir(){VT_COMPARTIR_ACTIVOS=[];const p=get("vt-compartir-panel");if(p)p.hidden=true;const b=get("vt-btn-compartir");if(b)b.textContent="⇄ Compartir canalización";}
 function vtPrepararCroquis(){
-  const cv=get("vt-croquis"); if(!cv||cv.dataset.ready)return; cv.dataset.ready="1";
-  const ctx=cv.getContext("2d"); ctx.lineWidth=3;ctx.lineCap="round";ctx.strokeStyle="#172033";
-  let activo=false,ultimo=null;
+  const cv=get("vt-croquis");if(!cv||cv.dataset.ready)return;cv.dataset.ready="1";
+  const ctx=cv.getContext("2d");let activo=false,puntos=[];
   function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};}
-  cv.addEventListener("pointerdown",e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);const p=pos(e);const sym=val("vt-simbolo");if(sym&&sym!=="libre"){ctx.fillStyle="#172033";ctx.font="bold 20px Arial";ctx.fillText(({T1:"T",T2:"T×2",I:"I",L:"⊗",C:"□",Q:"▣"})[sym],p.x-9,p.y+7);VT_TRAZOS.push({kind:"symbol",symbol:sym,x:p.x,y:p.y});return;}activo=true;ultimo=p;ctx.beginPath();ctx.moveTo(p.x,p.y);});
-  cv.addEventListener("pointermove",e=>{if(!activo)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();ultimo=p;});
-  const fin=()=>{if(activo){activo=false;VT_TRAZOS.push({kind:"stroke"});}};cv.addEventListener("pointerup",fin);cv.addEventListener("pointercancel",fin);
+  cv.addEventListener("pointerdown",e=>{
+    e.preventDefault();cv.setPointerCapture(e.pointerId);const p=pos(e);const sym=val("vt-simbolo");
+    if(sym&&sym!=="libre"){
+      const circuito=VT_CIRCUITOS.find(c=>c.id===val("vt-circuito-activo"));ctx.fillStyle=circuito?vtColorCircuito(circuito):"#172033";ctx.font="bold 20px Arial";ctx.fillText(({T1:"T",T2:"T×2",I:"I",L:"⊗",C:"□",Q:"▣"})[sym],p.x-9,p.y+7);
+      VT_TRAZOS.push({kind:"symbol",symbol:sym,x:p.x,y:p.y,circuitos:circuito?[circuito.id]:[]});return;
+    }
+    const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:(val("vt-circuito-activo")?[val("vt-circuito-activo")]:[]);
+    if(!ids.length){toast("Agregá y seleccioná un circuito antes de dibujar","yellow");return;}
+    activo=true;puntos=[p];ctx.beginPath();ctx.moveTo(p.x,p.y);
+  });
+  cv.addEventListener("pointermove",e=>{if(!activo)return;const p=pos(e);puntos.push(p);ctx.lineTo(p.x,p.y);ctx.strokeStyle=VT_COMPARTIR_ACTIVOS.length>=2?VT_COLOR_COMPARTIDO:(vtColorCircuito(VT_CIRCUITOS.find(c=>c.id===val("vt-circuito-activo"))||{}));ctx.lineWidth=4;ctx.lineCap="round";ctx.stroke();});
+  const fin=()=>{if(!activo)return;activo=false;const ids=VT_COMPARTIR_ACTIVOS.length>=2?[...VT_COMPARTIR_ACTIVOS]:(val("vt-circuito-activo")?[val("vt-circuito-activo")]:[]);VT_TRAZOS.push({kind:"path",points:puntos,circuitos:ids,compartido:ids.length>1});if(ids.length>1){VT_COMPARTIR_ACTIVOS=[];const b=get("vt-btn-compartir");if(b)b.textContent="⇄ Compartir canalización";}vtActualizarHerramientasCroquis();};
+  cv.addEventListener("pointerup",fin);cv.addEventListener("pointercancel",fin);
+  vtActualizarHerramientasCroquis();
 }
-function vtLimpiarCroquis(){const cv=get("vt-croquis");if(!cv)return;cv.getContext("2d").clearRect(0,0,cv.width,cv.height);VT_TRAZOS=[];}
+function vtRedibujarCroquis(){
+  const cv=get("vt-croquis");if(!cv)return;const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);
+  VT_TRAZOS.forEach(t=>{
+    if(t.kind==="path"&&t.points?.length){ctx.beginPath();ctx.moveTo(t.points[0].x,t.points[0].y);t.points.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));ctx.strokeStyle=t.compartido?VT_COLOR_COMPARTIDO:vtColorCircuito(VT_CIRCUITOS.find(c=>c.id===t.circuitos?.[0])||{});ctx.lineWidth=4;ctx.lineCap="round";ctx.stroke();if(t.compartido){const p=t.points[Math.floor(t.points.length/2)];const cod=VT_CIRCUITOS.filter(c=>t.circuitos.includes(c.id)).map(c=>c.codigo).join("+");ctx.font="bold 13px Arial";ctx.fillStyle=VT_COLOR_COMPARTIDO;ctx.fillText(cod,p.x+5,p.y-8);}}
+    else if(t.kind==="symbol"){const c=VT_CIRCUITOS.find(x=>x.id===t.circuitos?.[0]);ctx.fillStyle=c?vtColorCircuito(c):"#172033";ctx.font="bold 20px Arial";ctx.fillText(({T1:"T",T2:"T×2",I:"I",L:"⊗",C:"□",Q:"▣"})[t.symbol]||"•",t.x-9,t.y+7);}
+  });
+}
+function vtLimpiarCroquis(){const cv=get("vt-croquis");if(!cv)return;cv.getContext("2d").clearRect(0,0,cv.width,cv.height);VT_TRAZOS=[];vtActualizarHerramientasCroquis();}
 async function vtLeerFotos(){const input=get("vt-fotos");if(!input||!input.files?.length)return VT_FOTOS;const files=Array.from(input.files).slice(0,12);for(const file of files){if(file.size>8*1024*1024){toast(`La foto ${file.name} supera 8 MB y se omitió`,"yellow");continue;}const data=await new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>resolve(null);r.readAsDataURL(file);});if(data)VT_FOTOS.push({nombre:file.name,data});}input.value="";return VT_FOTOS;}
 async function vtGuardarVisita(){
   if(!val("vt-cliente")&&!val("vt-pedido")){toast("Seleccioná un cliente o describí el pedido","yellow");return;}
   if(!VT_AMBIENTES.length && (val("vt-notas")||val("vt-i-observaciones")||val("vt-ambiente-otro")))vtAgregarAmbiente();
   await vtLeerFotos();
   const cv=get("vt-croquis");
-  const visita={id:window.VT_ID||uid(),clienteId:val("vt-cliente"),obraId:val("vt-obra"),materiales:VT_MATERIALES,fecha:val("vt-fecha")||vtFechaHoy(),tipo:val("vt-tipo"),estado:val("vt-estado"),pedido:val("vt-pedido"),ambientes:VT_AMBIENTES,circuitos:VT_CIRCUITOS,fotos:VT_FOTOS,croquis:cv?cv.toDataURL("image/png"):null,cierre:val("vt-cierre"),actualizado:new Date().toISOString()};
+  const visita={id:window.VT_ID||uid(),clienteId:val("vt-cliente"),obraId:val("vt-obra"),materiales:VT_MATERIALES,fecha:val("vt-fecha")||vtFechaHoy(),tipo:val("vt-tipo"),estado:val("vt-estado"),pedido:val("vt-pedido"),ambientes:VT_AMBIENTES,circuitos:VT_CIRCUITOS,trazos:VT_TRAZOS,fotos:VT_FOTOS,croquis:cv?cv.toDataURL("image/png"):null,cierre:val("vt-cierre"),actualizado:new Date().toISOString()};
   const lista=vtLeer(),idx=lista.findIndex(x=>x.id===visita.id);if(idx>=0)lista[idx]=visita;else lista.unshift(visita);
   try{vtPersistir(lista);window.VT_ID=visita.id;toast("Visita guardada en este dispositivo");}catch(e){toast("No se pudo guardar: almacenamiento lleno. Reducí las fotos.","yellow");}
 }
-function vtNuevaVisita(){if(!confirm("¿Iniciar una visita nueva? Guardá antes la visita actual."))return;window.VT_ID=null;VT_AMBIENTES=[];VT_CIRCUITOS=[];VT_FOTOS=[];VT_TRAZOS=[];VT_MATERIALES=[];["vt-cliente","vt-obra","vt-pedido","vt-notas","vt-ambiente-otro","vt-i-norma","vt-i-observaciones","vt-tipo-punto","vt-conductores","vt-cano-diam","vt-recorrido","vt-cierre"].forEach(id=>{if(get(id))get(id).value="";});if(get("vt-fecha"))get("vt-fecha").value=vtFechaHoy();if(get("vt-puntos"))get("vt-puntos").value="0";vtLimpiarCroquis();vtRenderListas();vtRenderMateriales();toast("Nueva visita lista");}
+function vtNuevaVisita(){if(!confirm("¿Iniciar una visita nueva? Guardá antes la visita actual."))return;window.VT_ID=null;VT_AMBIENTES=[];VT_CIRCUITOS=[];VT_FOTOS=[];VT_TRAZOS=[];VT_COMPARTIR_ACTIVOS=[];VT_MATERIALES=[];vtCancelarCompartir();["vt-cliente","vt-obra","vt-pedido","vt-notas","vt-ambiente-otro","vt-i-norma","vt-i-observaciones","vt-tipo-punto","vt-conductores","vt-cano-diam","vt-recorrido","vt-cierre"].forEach(id=>{if(get(id))get(id).value="";});if(get("vt-fecha"))get("vt-fecha").value=vtFechaHoy();if(get("vt-puntos"))get("vt-puntos").value="0";vtLimpiarCroquis();vtRenderListas();vtRenderMateriales();toast("Nueva visita lista");}
 
 
 // ETAPA 3 — materiales, presupuesto e informe técnico
